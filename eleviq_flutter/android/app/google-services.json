@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "564102027622",
+    "project_id": "eleviq-app",
+    "storage_bucket": "eleviq-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:564102027622:android:db14708331e3b47bd6d0a7",
+        "android_client_info": {
+          "package_name": "com.eleviq.eleviq_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgcQGx4aGOBCyPg8_ZDBn9Me2ML5rSIG4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
