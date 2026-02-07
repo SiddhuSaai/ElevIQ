@@ -1,39 +1,39 @@
+'use client';
+
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
     signOut,
-    sendPasswordResetEmail,
+    sendPasswordResetEmail as firebaseSendPasswordResetEmail,
     updateProfile,
-    User,
     UserCredential,
 } from 'firebase/auth';
 import { auth } from './config';
 
-export class AuthService {
-    // Check if auth is available
-    private static checkAuth() {
-        if (!auth) {
-            throw new Error('Firebase Auth is not initialized. Please configure Firebase credentials.');
-        }
-        return auth;
-    }
+const googleProvider = new GoogleAuthProvider();
 
-    // Sign up with email and password
+export class AuthService {
+    /**
+     * Sign up with email and password
+     */
     static async signUpWithEmail(
         email: string,
         password: string,
         displayName?: string
     ): Promise<UserCredential> {
-        const firebaseAuth = this.checkAuth();
+        if (!auth) {
+            throw new Error('Firebase Auth is not initialized');
+        }
 
         try {
             const credential = await createUserWithEmailAndPassword(
-                firebaseAuth,
+                auth,
                 email,
                 password
             );
 
-            // Update display name if provided
             if (displayName && credential.user) {
                 await updateProfile(credential.user, { displayName });
             }
@@ -46,16 +46,20 @@ export class AuthService {
         }
     }
 
-    // Sign in with email and password
+    /**
+     * Sign in with email and password
+     */
     static async signInWithEmail(
         email: string,
         password: string
     ): Promise<UserCredential> {
-        const firebaseAuth = this.checkAuth();
+        if (!auth) {
+            throw new Error('Firebase Auth is not initialized');
+        }
 
         try {
             const credential = await signInWithEmailAndPassword(
-                firebaseAuth,
+                auth,
                 email,
                 password
             );
@@ -67,25 +71,34 @@ export class AuthService {
         }
     }
 
-    // Sign out
-    static async signOut(): Promise<void> {
-        const firebaseAuth = this.checkAuth();
+    /**
+     * Sign in with Google
+     */
+    static async signInWithGoogle(): Promise<UserCredential> {
+        if (!auth) {
+            throw new Error('Firebase Auth is not initialized');
+        }
 
         try {
-            await signOut(firebaseAuth);
-            console.log('✅ User signed out');
+            const credential = await signInWithPopup(auth, googleProvider);
+            console.log('✅ Google sign in:', credential.user.email);
+            return credential;
         } catch (error: any) {
-            console.error('❌ Sign out error:', error.message);
+            console.error('❌ Google sign in error:', error.message);
             throw error;
         }
     }
 
-    // Password reset
-    static async resetPassword(email: string): Promise<void> {
-        const firebaseAuth = this.checkAuth();
+    /**
+     * Send password reset email
+     */
+    static async sendPasswordResetEmail(email: string): Promise<void> {
+        if (!auth) {
+            throw new Error('Firebase Auth is not initialized');
+        }
 
         try {
-            await sendPasswordResetEmail(firebaseAuth, email);
+            await firebaseSendPasswordResetEmail(auth, email);
             console.log('✅ Password reset email sent to:', email);
         } catch (error: any) {
             console.error('❌ Password reset error:', error.message);
@@ -93,12 +106,26 @@ export class AuthService {
         }
     }
 
-    // Get current user
-    static getCurrentUser(): User | null {
-        return auth?.currentUser || null;
+    /**
+     * Sign out
+     */
+    static async signOut(): Promise<void> {
+        if (!auth) {
+            throw new Error('Firebase Auth is not initialized');
+        }
+
+        try {
+            await signOut(auth);
+            console.log('✅ User signed out');
+        } catch (error: any) {
+            console.error('❌ Sign out error:', error.message);
+            throw error;
+        }
     }
 
-    // Get error message from Firebase error
+    /**
+     * Get friendly error message
+     */
     static getErrorMessage(error: any): string {
         const errorString = error?.message || error?.toString() || '';
 
@@ -117,12 +144,20 @@ export class AuthService {
                 return 'No account found with this email';
             case 'auth/wrong-password':
                 return 'Incorrect password';
+            case 'auth/invalid-credential':
+                return 'Invalid email or password';
             case 'auth/weak-password':
                 return 'Password is too weak';
             case 'auth/network-request-failed':
                 return 'Network error. Please check your connection';
             case 'auth/too-many-requests':
                 return 'Too many attempts. Please try again later';
+            case 'auth/popup-closed-by-user':
+                return 'Sign in was cancelled';
+            case 'auth/popup-blocked':
+                return 'Pop-up was blocked. Please allow pop-ups for this site';
+            case 'auth/operation-not-allowed':
+                return 'This sign-in method is not enabled';
             default:
                 return error?.message || 'An error occurred. Please try again';
         }
