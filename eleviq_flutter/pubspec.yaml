@@ -1,0 +1,59 @@
+name: eleviq
+description: GenAI-Powered Personal Finance Assistant
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  
+  # Navigation
+  go_router: ^13.2.0
+  
+  # Firebase
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  cloud_firestore: ^4.15.8
+  firebase_storage: ^11.6.9
+  
+  # HTTP & API
+  dio: ^5.4.1
+  
+  # Local Storage
+  shared_preferences: ^2.2.2
+  
+  # UI Components
+  fl_chart: ^0.66.2
+  google_fonts: ^6.2.1
+  
+  # Utilities
+  uuid: ^4.3.3
+  equatable: ^2.0.5
+  
+  # Icons
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  
+  # Code Generation
+  build_runner: ^2.4.8
+  riverpod_generator: ^2.3.11
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
