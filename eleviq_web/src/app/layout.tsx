@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import './globals.css';
+import { ThemeProvider } from '@/contexts/theme-context';
 
 export const metadata: Metadata = {
   title: 'ELEVIQ - Personal Finance Assistant',
@@ -12,8 +13,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased">{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -52,7 +52,7 @@ export const SocialButton = forwardRef<HTMLButtonElement, SocialButtonProps>(
                 <button
                     ref={ref}
                     className={cn(
-                        'flex items-center justify-center w-full h-12 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors',
+                        'flex items-center justify-center w-full h-12 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#171717] hover:bg-gray-50 dark:hover:bg-white/5 transition-colors',
                         isLoading && 'opacity-50 cursor-not-allowed',
                         className
                     )}
@@ -68,7 +68,7 @@ export const SocialButton = forwardRef<HTMLButtonElement, SocialButtonProps>(
             <button
                 ref={ref}
                 className={cn(
-                    'flex items-center justify-center gap-3 w-full h-12 px-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium transition-colors',
+                    'flex items-center justify-center gap-3 w-full h-12 px-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#171717] hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300 font-medium transition-colors',
                     isLoading && 'opacity-50 cursor-not-allowed',
                     className
                 )}

@@ -1,122 +1,226 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { LogOut, Wallet, TrendingUp, PiggyBank, MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { AuthService } from '@/lib/firebase/auth';
+import { useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { Plus, Calendar } from 'lucide-react';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { useExpenseStore } from '@/store/expense-store';
 import { useAuthStore } from '@/store/auth-store';
+import { useUserNetWorth } from '@/hooks/useUserNetWorth';
+import { useUserGoals } from '@/hooks/useUserGoals';
+import { useBills } from '@/hooks/useBills';
+import {
+    NetWorthWidget,
+    BillsWidget,
+    GoalsWidget,
+    InsightsWidget,
+    SpendingWidget,
+    TransactionsWidget,
+    StreakWidget,
+    QuickActionsWidget
+} from '@/components/dashboard/widgets';
+import { generateInsights, calculateStreak } from '@/lib/insights';
 
 export default function DashboardPage() {
-    const router = useRouter();
-    const { user, isAuthenticated, isLoading, reset } = useAuthStore();
+    const { user } = useAuthStore();
+    const { expenses, monthlyTotal, categoryTotals, fetchExpenses, fetchStats } = useExpenseStore();
+
+    // Use real data from Firestore hooks
+    const { assets, liabilities } = useUserNetWorth();
+    const { goals } = useUserGoals();
+    const { upcomingBills } = useBills();
 
     useEffect(() => {
-        if (!isLoading && !isAuthenticated) {
-            router.push('/login');
-        }
-    }, [isAuthenticated, isLoading, router]);
+        fetchExpenses();
+        fetchStats();
+    }, [fetchExpenses, fetchStats]);
 
-    const handleLogout = async () => {
-        await AuthService.signOut();
-        reset();
-        router.push('/login');
-    };
+    // Transform data for widgets
+    const widgetAssets = useMemo(() =>
+        assets.map(a => ({
+            type: a.category,
+            name: a.name,
+            amount: a.value,
+        })), [assets]);
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-                <div className="text-center">
-                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-slate-500">Loading...</p>
-                </div>
-            </div>
-        );
-    }
+    const widgetLiabilities = useMemo(() =>
+        liabilities.map(l => ({
+            type: l.category,
+            name: l.name,
+            amount: l.value,
+        })), [liabilities]);
+
+    const widgetGoals = useMemo(() =>
+        goals.map(g => ({
+            id: g.id,
+            name: g.name,
+            targetAmount: g.targetAmount,
+            currentAmount: g.currentAmount,
+        })), [goals]);
+
+    const widgetBills = useMemo(() =>
+        upcomingBills.map(b => ({
+            id: b.id,
+            name: b.name,
+            amount: b.amount,
+            dueDate: new Date(b.dueDate),
+            isPaid: b.isPaid,
+            category: b.category,
+        })), [upcomingBills]);
+
+    // Calculate derived data
+    const streak = useMemo(() => calculateStreak(expenses), [expenses]);
+    const insights = useMemo(() => generateInsights(expenses, [], widgetBills), [expenses, widgetBills]);
+
+    // Weekly stats for gamification
+    const weeklyStats = useMemo(() => {
+        const weekStart = startOfWeek(new Date());
+        const weekEnd = endOfWeek(new Date());
+        const weekExpenses = expenses.filter(e => e.date >= weekStart && e.date <= weekEnd);
+        return {
+            points: weekExpenses.length * 10, // 10 points per expense logged
+            challenge: { current: weekExpenses.length, target: 7 },
+        };
+    }, [expenses]);
+
+    // Total points from achievements
+    const totalPoints = useMemo(() => {
+        let points = 0;
+        if (expenses.length >= 1) points += 10;
+        if (expenses.length >= 10) points += 50;
+        if (expenses.length >= 50) points += 200;
+        if (streak >= 7) points += 100;
+        return points + weeklyStats.points;
+    }, [expenses, streak, weeklyStats.points]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-            {/* Header */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white">
-                            <Wallet size={20} />
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
+            {/* ========== MOBILE LAYOUT ========== */}
+            <div className="lg:hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-xl font-bold">
+                                Hi, {user?.displayName?.split(' ')[0] || 'there'}! 👋
+                            </h1>
+                            <p className="text-blue-100 text-sm mt-0.5">
+                                {format(new Date(), 'EEEE, MMM d')}
+                            </p>
                         </div>
-                        <span className="text-xl font-bold text-slate-900">ELEVIQ</span>
-                    </div>
-                    <Button variant="ghost" onClick={handleLogout}>
-                        <LogOut size={18} className="mr-2" />
-                        Logout
-                    </Button>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="max-w-6xl mx-auto px-4 py-8">
-                {/* Welcome Section */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white mb-8 shadow-xl shadow-blue-600/20">
-                    <h1 className="text-2xl font-bold mb-2">
-                        Welcome back, {user?.displayName || 'User'}! 👋
-                    </h1>
-                    <p className="text-blue-100">
-                        Your personal finance dashboard is ready. Start tracking your expenses!
-                    </p>
-                </div>
-
-                {/* Quick Stats */}
-                <div className="grid md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
-                                <TrendingUp size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">Total Income</p>
-                                <p className="text-2xl font-bold text-slate-900">₹0</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-red-600">
-                                <PiggyBank size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">Total Expenses</p>
-                                <p className="text-2xl font-bold text-slate-900">₹0</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                                <MessageCircle size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">AI Suggestions</p>
-                                <p className="text-2xl font-bold text-slate-900">0</p>
-                            </div>
-                        </div>
+                        <Link
+                            href="/expenses/add"
+                            className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+                        >
+                            <Plus className="w-5 h-5" />
+                        </Link>
                     </div>
                 </div>
 
-                {/* Coming Soon */}
-                <div className="bg-white rounded-2xl p-8 text-center shadow-lg shadow-slate-200/50">
-                    <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mx-auto mb-4">
-                        <Wallet size={32} />
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-900 mb-2">
-                        Dashboard Coming Soon!
-                    </h2>
-                    <p className="text-slate-500 max-w-md mx-auto">
-                        The expense tracking, analytics, and AI chatbot features are being developed.
-                        Check back soon for the full ELEVIQ experience!
-                    </p>
+                {/* Mobile Bento Grid */}
+                <div className="px-4 py-6 pb-24 space-y-4">
+                    {/* Quick Actions */}
+                    <QuickActionsWidget />
+
+                    {/* Net Worth - Full Width */}
+                    <NetWorthWidget assets={widgetAssets} liabilities={widgetLiabilities} />
+
+                    {/* Spending Widget */}
+                    <SpendingWidget
+                        monthlyTotal={monthlyTotal}
+                        budget={60000}
+                        categoryTotals={categoryTotals}
+                        transactionCount={expenses.length}
+                    />
+
+                    {/* Bills Widget */}
+                    <BillsWidget bills={widgetBills} />
+
+                    {/* Goals Widget */}
+                    <GoalsWidget goals={widgetGoals} />
+
+                    {/* Smart Insights */}
+                    <InsightsWidget insights={insights} />
+
+                    {/* Recent Transactions */}
+                    <TransactionsWidget expenses={expenses} />
+
+                    {/* Streak Widget */}
+                    <StreakWidget
+                        streak={streak}
+                        weeklyPoints={weeklyStats.points}
+                        weeklyChallenge={weeklyStats.challenge}
+                        totalPoints={totalPoints}
+                    />
                 </div>
-            </main>
+            </div>
+
+            {/* ========== DESKTOP LAYOUT ========== */}
+            <div className="hidden lg:block p-6">
+                {/* Enhanced Header */}
+                <div className="mb-6">
+                    <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                {format(new Date(), 'EEEE, MMMM d, yyyy')}
+                            </p>
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                                {new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening'}, {user?.displayName?.split(' ')[0] || 'there'}
+                            </h1>
+                            <p className="text-gray-600 dark:text-gray-400 mt-2">
+                                {monthlyTotal === 0
+                                    ? "Start tracking your expenses today! 🚀"
+                                    : `You've spent ₹${monthlyTotal.toLocaleString('en-IN')} this month ✨`}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+
+                {/* Desktop Bento Grid - Tighter Layout */}
+                <div className="grid grid-cols-12 gap-4">
+                    {/* Row 1: Quick Actions (5) + Net Worth (4) + Goals (3) */}
+                    <div className="col-span-5">
+                        <QuickActionsWidget />
+                    </div>
+                    <div className="col-span-4">
+                        <NetWorthWidget assets={widgetAssets} liabilities={widgetLiabilities} />
+                    </div>
+                    <div className="col-span-3">
+                        <GoalsWidget goals={widgetGoals} />
+                    </div>
+
+                    {/* Row 2: Spending (5) + Bills (4) + Insights (3) */}
+                    <div className="col-span-5">
+                        <SpendingWidget
+                            monthlyTotal={monthlyTotal}
+                            budget={60000}
+                            categoryTotals={categoryTotals}
+                            transactionCount={expenses.length}
+                        />
+                    </div>
+                    <div className="col-span-4">
+                        <BillsWidget bills={widgetBills} />
+                    </div>
+                    <div className="col-span-3">
+                        <InsightsWidget insights={insights} />
+                    </div>
+
+                    {/* Row 3: Transactions (8) + Streak (4) */}
+                    <div className="col-span-8">
+                        <TransactionsWidget expenses={expenses} />
+                    </div>
+                    <div className="col-span-4">
+                        <StreakWidget
+                            streak={streak}
+                            weeklyPoints={weeklyStats.points}
+                            weeklyChallenge={weeklyStats.challenge}
+                            totalPoints={totalPoints}
+                        />
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

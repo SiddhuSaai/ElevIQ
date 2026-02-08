@@ -12,11 +12,11 @@ export function EmailDisplay({ email, onChangeEmail, className }: EmailDisplayPr
     return (
         <div
             className={cn(
-                'flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-white',
+                'flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#171717]',
                 className
             )}
         >
-            <span className="text-gray-900 truncate">{email}</span>
+            <span className="text-gray-900 dark:text-white truncate">{email}</span>
             <button
                 type="button"
                 onClick={onChangeEmail}

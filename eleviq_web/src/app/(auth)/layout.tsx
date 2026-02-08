@@ -1,39 +1,38 @@
 'use client';
 
 import Link from 'next/link';
+import { useTheme } from '@/contexts/theme-context';
+import { SnackbarProvider } from './_components';
 
 export default function AuthLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const { actualTheme } = useTheme();
+
     return (
-        <>
-            {/* Desktop: Dark background, Mobile: White background */}
-            <div className="min-h-screen flex flex-col bg-white lg:bg-[#0a0a0a]">
+        <SnackbarProvider>
+            <div className={`min-h-screen flex flex-col ${actualTheme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-white lg:bg-gray-50'}`}>
                 {/* Main Content */}
                 <div className="flex-1 flex items-center justify-center px-4 py-8 lg:py-16">
                     <div className="w-full max-w-[440px]">
-                        {/* Logo - Different positioning for mobile vs desktop */}
+                        {/* Logo */}
                         <div className="mb-8 lg:mb-10 lg:text-center">
                             <Link href="/" className="inline-flex items-center gap-2">
-                                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
-                                    <svg
-                                        viewBox="0 0 24 24"
-                                        className="w-6 h-6 lg:w-7 lg:h-7 text-white"
-                                        fill="currentColor"
-                                    >
-                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                                    </svg>
-                                </div>
-                                <span className="text-xl lg:hidden font-bold text-gray-900">
-                                    ELEVIQ
-                                </span>
+                                <img
+                                    src={actualTheme === 'dark' ? '/ElevIQ_White.png' : '/ElevIQ logo with gold accents-2.png'}
+                                    alt="ElevIQ"
+                                    className="h-10 lg:h-14 w-auto"
+                                />
                             </Link>
                         </div>
 
-                        {/* Card wrapper - Only on desktop */}
-                        <div className="lg:bg-white lg:rounded-2xl lg:shadow-2xl lg:p-8">
+                        {/* Card wrapper */}
+                        <div className={`lg:rounded-2xl lg:p-8 ${actualTheme === 'dark'
+                            ? 'lg:bg-[#171717] lg:border lg:border-white/5'
+                            : 'lg:bg-white lg:shadow-2xl'
+                            }`}>
                             {children}
                         </div>
                     </div>
@@ -41,7 +40,8 @@ export default function AuthLayout({
 
                 {/* Footer */}
                 <footer className="py-4 px-4 text-center">
-                    <div className="flex items-center justify-center gap-4 text-sm text-gray-500 lg:text-gray-400">
+                    <div className={`flex items-center justify-center gap-4 text-sm ${actualTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
                         <span className="lg:hidden">
                             Help{' '}
                             <span className="mx-2">·</span>
@@ -51,7 +51,8 @@ export default function AuthLayout({
                         </span>
                         <span className="hidden lg:block">Need Help?</span>
                     </div>
-                    <p className="mt-2 text-xs text-gray-400 lg:text-gray-500">
+                    <p className={`mt-2 text-xs ${actualTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                        }`}>
                         By continuing, you agree to the{' '}
                         <Link href="/terms" className="text-blue-600 hover:underline">
                             Terms
@@ -64,6 +65,6 @@ export default function AuthLayout({
                     </p>
                 </footer>
             </div>
-        </>
+        </SnackbarProvider>
     );
 }

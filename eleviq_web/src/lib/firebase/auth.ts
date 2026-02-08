@@ -9,10 +9,15 @@ import {
     sendPasswordResetEmail as firebaseSendPasswordResetEmail,
     updateProfile,
     UserCredential,
+    browserPopupRedirectResolver,
 } from 'firebase/auth';
 import { auth } from './config';
 
+// Configure Google provider with custom parameters
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+    prompt: 'select_account'
+});
 
 export class AuthService {
     /**
@@ -80,7 +85,12 @@ export class AuthService {
         }
 
         try {
-            const credential = await signInWithPopup(auth, googleProvider);
+            // Use browserPopupRedirectResolver for better cross-origin support
+            const credential = await signInWithPopup(
+                auth,
+                googleProvider,
+                browserPopupRedirectResolver
+            );
             console.log('✅ Google sign in:', credential.user.email);
             return credential;
         } catch (error: any) {
