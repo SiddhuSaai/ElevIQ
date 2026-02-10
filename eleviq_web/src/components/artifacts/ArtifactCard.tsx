@@ -45,9 +45,9 @@ export default function ArtifactCard({ artifactId }: ArtifactCardProps) {
     return (
         <button
             onClick={() => openArtifact(artifactId)}
-            className={`group flex items-center gap-3 px-4 py-3 border rounded-xl transition-all cursor-pointer text-left max-w-[280px] ${actualTheme === 'dark'
-                    ? 'bg-[#1a1a1a] hover:bg-[#252525] border-white/10 hover:border-purple-500/50'
-                    : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-purple-400 shadow-sm'
+            className={`group flex items-center gap-3 px-4 py-3 border rounded-xl transition-all cursor-pointer text-left w-full ${actualTheme === 'dark'
+                ? 'bg-[#1a1a1a] hover:bg-[#252525] border-white/10 hover:border-purple-500/50'
+                : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-purple-400 shadow-sm'
                 }`}
         >
             <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">

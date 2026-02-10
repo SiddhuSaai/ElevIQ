@@ -55,7 +55,7 @@ export default function AddFundsModal({ isOpen, goal, mode, onClose, onConfirm }
     return (
         <AnimatePresence>
             {isOpen && goal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -77,8 +77,8 @@ export default function AddFundsModal({ isOpen, goal, mode, onClose, onConfirm }
                             <div className="flex items-center gap-3">
                                 <div
                                     className={`w-10 h-10 rounded-xl flex items-center justify-center ${mode === 'add'
-                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
-                                            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'
+                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                                        : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'
                                         }`}
                                 >
                                     {mode === 'add' ? <Plus className="w-5 h-5" /> : <Minus className="w-5 h-5" />}
@@ -152,8 +152,8 @@ export default function AddFundsModal({ isOpen, goal, mode, onClose, onConfirm }
                                             onClick={() => setAmount(amt.toString())}
                                             disabled={mode === 'withdraw' && amt > maxWithdraw}
                                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${amount === amt.toString()
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
                                                 }`}
                                         >
                                             {formatValue(amt)}
@@ -185,8 +185,8 @@ export default function AddFundsModal({ isOpen, goal, mode, onClose, onConfirm }
                                 onClick={handleSubmit}
                                 disabled={!amount || parseFloat(amount) <= 0 || (mode === 'withdraw' && parseFloat(amount) > maxWithdraw) || isSubmitting}
                                 className={`flex-1 py-3 rounded-xl font-medium transition-colors ${mode === 'add'
-                                        ? 'bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white'
-                                        : 'bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white'
+                                    ? 'bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white'
+                                    : 'bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white'
                                     }`}
                             >
                                 {isSubmitting ? 'Processing...' : mode === 'add' ? 'Add Funds' : 'Withdraw'}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(req: NextRequest) {
     try {
@@ -10,8 +10,6 @@ export async function POST(req: NextRequest) {
         if (!text) {
             return NextResponse.json({ error: 'No text provided' }, { status: 400 });
         }
-
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         const prompt = `You are a smart expense parser. Parse the following natural language input into expense details.
         
@@ -30,9 +28,12 @@ Examples:
 
 Return ONLY the JSON object, no other text.`;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const responseText = response.text().trim();
+        const result = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+        });
+
+        const responseText = (result.text || '').trim();
 
         // Extract JSON from response
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);

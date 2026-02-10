@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Target } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { useUserGoals, type Goal } from '@/hooks/useUserGoals';
 import {
     GoalsOverviewCard,
@@ -115,97 +116,91 @@ export default function GoalsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a] p-4 lg:p-8">
-            {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between mb-8"
-            >
-                <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                        Savings Goals
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        Track and achieve your financial dreams
-                    </p>
-                </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-600/25"
-                >
-                    <Plus className="w-5 h-5" />
-                    <span className="hidden sm:inline">New Goal</span>
-                </button>
-            </motion.div>
+        <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
+            <PageHeader
+                icon={Target}
+                iconColor="text-pink-400"
+                title="Goals"
+                actions={
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span className="hidden sm:inline">Add Goal</span>
+                    </button>
+                }
+            />
+            <div className="p-4 lg:p-8">
 
-            {goals.length === 0 ? (
-                // Empty State
-                <GoalsEmptyState onCreateGoal={() => setShowAddModal(true)} />
-            ) : (
-                <div className="space-y-8">
-                    {/* Overview Card */}
-                    <GoalsOverviewCard
-                        goals={goals}
-                        totalSaved={totalSaved}
-                        totalTarget={totalTarget}
-                    />
+                {goals.length === 0 ? (
+                    // Empty State
+                    <GoalsEmptyState onCreateGoal={() => setShowAddModal(true)} />
+                ) : (
+                    <div className="space-y-8">
+                        {/* Overview Card */}
+                        <GoalsOverviewCard
+                            goals={goals}
+                            totalSaved={totalSaved}
+                            totalTarget={totalTarget}
+                        />
 
-                    {/* Charts & Insights Row */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Projection Chart */}
-                        <div className="lg:col-span-2">
-                            <GoalProjectionChart goals={goals} />
+                        {/* Charts & Insights Row */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Projection Chart */}
+                            <div className="lg:col-span-2">
+                                <GoalProjectionChart goals={goals} />
+                            </div>
+
+                            {/* Insights Panel */}
+                            <div>
+                                <GoalInsightsPanel goals={goals} />
+                            </div>
                         </div>
 
-                        {/* Insights Panel */}
+                        {/* Goals Grid */}
                         <div>
-                            <GoalInsightsPanel goals={goals} />
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Your Goals
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {goals.map((goal, index) => (
+                                    <motion.div
+                                        key={goal.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.1 }}
+                                    >
+                                        <GoalCard
+                                            goal={goal}
+                                            onAddFunds={handleOpenAddFunds}
+                                            onWithdraw={handleOpenWithdraw}
+                                            onEdit={handleEdit}
+                                            onDelete={handleDelete}
+                                        />
+                                    </motion.div>
+                                ))}
+                            </div>
                         </div>
                     </div>
+                )}
 
-                    {/* Goals Grid */}
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Your Goals
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {goals.map((goal, index) => (
-                                <motion.div
-                                    key={goal.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                >
-                                    <GoalCard
-                                        goal={goal}
-                                        onAddFunds={handleOpenAddFunds}
-                                        onWithdraw={handleOpenWithdraw}
-                                        onEdit={handleEdit}
-                                        onDelete={handleDelete}
-                                    />
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
+                {/* Add Goal Modal */}
+                <AddGoalModal
+                    isOpen={showAddModal}
+                    onClose={() => setShowAddModal(false)}
+                    onAdd={handleAddGoal}
+                />
 
-            {/* Add Goal Modal */}
-            <AddGoalModal
-                isOpen={showAddModal}
-                onClose={() => setShowAddModal(false)}
-                onAdd={handleAddGoal}
-            />
-
-            {/* Add/Withdraw Funds Modal */}
-            <AddFundsModal
-                isOpen={fundsModal.isOpen}
-                goal={fundsModal.goal}
-                mode={fundsModal.mode}
-                onClose={() => setFundsModal({ isOpen: false, goal: null, mode: 'add' })}
-                onConfirm={handleFundsConfirm}
-            />
+                {/* Add/Withdraw Funds Modal */}
+                <AddFundsModal
+                    isOpen={fundsModal.isOpen}
+                    goal={fundsModal.goal}
+                    mode={fundsModal.mode}
+                    onClose={() => setFundsModal({ isOpen: false, goal: null, mode: 'add' })}
+                    onConfirm={handleFundsConfirm}
+                />
+            </div>
         </div>
     );
 }

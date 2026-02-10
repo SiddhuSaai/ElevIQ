@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Flame, Target, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
-import { SliderInput, ProgressGauge, GrowthChart, AIInsights } from './shared';
+import { Flame, Target, TrendingUp, AlertTriangle, CheckCircle, BarChart3, Settings2 } from 'lucide-react';
+import { SliderInput, ProgressGauge, GrowthChart, HeroBanner, GlassCard, AIAdvisorModal } from './shared';
+import { generateFIRESummary } from './shared/aiSummaryGenerators';
 
 interface FIRECalculatorProps {
     onBack?: () => void;
@@ -25,31 +26,21 @@ export function FIRECalculator({ onBack }: FIRECalculatorProps) {
     const [expectedReturn, setExpectedReturn] = useState(12);
     const [inflationRate, setInflationRate] = useState(6);
     const [withdrawalRate, setWithdrawalRate] = useState(4);
+    const [showAIAdvisor, setShowAIAdvisor] = useState(false);
 
     // FIRE calculations
     const result = useMemo(() => {
         const yearsToFIRE = targetAge - currentAge;
         const annualExpenses = monthlyExpenses * 12;
-
-        // Future annual expenses (adjusted for inflation)
         const futureAnnualExpenses = annualExpenses * Math.pow(1 + inflationRate / 100, yearsToFIRE);
-
-        // FIRE Number (corpus needed based on withdrawal rate)
         const fireNumber = futureAnnualExpenses / (withdrawalRate / 100);
 
-        // Calculate projected corpus
         const r = expectedReturn / 12 / 100;
         const n = yearsToFIRE * 12;
-
-        // Future value of current savings
         const fvCurrentSavings = currentSavings * Math.pow(1 + expectedReturn / 100, yearsToFIRE);
-
-        // Future value of monthly investments (SIP)
         const fvInvestments = monthlyInvestment * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
-
         const projectedCorpus = fvCurrentSavings + fvInvestments;
 
-        // Calculate the age when FIRE is achieved
         let fireAge = targetAge;
         let yearlyCorpus = currentSavings;
         const yearlyInvestment = monthlyInvestment * 12;
@@ -65,111 +56,59 @@ export function FIRECalculator({ onBack }: FIRECalculatorProps) {
         const isOnTrack = projectedCorpus >= fireNumber;
         const gap = fireNumber - projectedCorpus;
         const progressPercent = (projectedCorpus / fireNumber) * 100;
-
-        // Required monthly investment to meet target
         const requiredMonthly = gap > 0
             ? (gap * r) / ((Math.pow(1 + r, n) - 1) * (1 + r))
             : 0;
 
         return {
-            fireNumber,
-            projectedCorpus,
-            isOnTrack,
-            gap,
-            progressPercent,
-            fireAge,
-            requiredMonthly,
-            fvCurrentSavings,
-            fvInvestments,
-            futureAnnualExpenses,
+            fireNumber, projectedCorpus, isOnTrack, gap, progressPercent,
+            fireAge, requiredMonthly, fvCurrentSavings, fvInvestments, futureAnnualExpenses,
         };
     }, [currentAge, targetAge, monthlyExpenses, currentSavings, monthlyInvestment, expectedReturn, inflationRate, withdrawalRate]);
 
-    // Generate yearly projection data
+    // Yearly projection data
     const yearlyData = useMemo(() => {
         const data = [];
         let corpus = currentSavings;
-
         for (let year = 0; year <= targetAge - currentAge; year++) {
-            data.push({
-                year,
-                value: corpus,
-            });
+            data.push({ year, value: corpus });
             corpus = corpus * (1 + expectedReturn / 100) + monthlyInvestment * 12;
         }
-
         return data;
     }, [currentAge, targetAge, currentSavings, monthlyInvestment, expectedReturn]);
 
-    // AI insights
-    const insights = useMemo(() => {
-        const tips: { type: 'tip' | 'warning' | 'goal'; title: string; message: string }[] = [];
+    // AI Summary generator
+    const handleGenerateSummary = useCallback(() => {
+        const savingsRate = ((monthlyInvestment / (monthlyExpenses + monthlyInvestment)) * 100);
+        return generateFIRESummary(
+            monthlyExpenses + monthlyInvestment, monthlyExpenses, savingsRate,
+            result.fireNumber, targetAge - currentAge
+        );
+    }, [monthlyInvestment, monthlyExpenses, result, targetAge, currentAge]);
 
-        if (!result.isOnTrack) {
-            tips.push({
-                type: 'warning',
-                title: 'Gap to Target',
-                message: `You're ₹${formatCurrencyFIRE(result.gap)} short. Increase SIP by ₹${formatCurrencyFIRE(result.requiredMonthly)}/month to meet your goal.`,
-            });
-        } else {
-            tips.push({
-                type: 'goal',
-                title: 'On Track! 🎉',
-                message: `You'll achieve FIRE by age ${result.fireAge}. Keep up your investment discipline!`,
-            });
-        }
-
-        // Expense reduction tip
-        const reducedExpenses = monthlyExpenses * 0.9;
-        const reducedFireNumber = (reducedExpenses * 12 * Math.pow(1 + inflationRate / 100, targetAge - currentAge)) / (withdrawalRate / 100);
-        const savings = result.fireNumber - reducedFireNumber;
-
-        tips.push({
-            type: 'tip',
-            title: 'Reduce Expenses by 10%',
-            message: `Lowering expenses to ₹${reducedExpenses.toLocaleString()}/month reduces your FIRE number by ₹${formatCurrencyFIRE(savings)}`,
-        });
-
-        // Earlier start
-        tips.push({
-            type: 'tip',
-            title: 'Power of Starting Early',
-            message: `Starting 5 years earlier with the same SIP would have given you ₹${formatCurrencyFIRE(result.fvInvestments * 0.6)} extra through compounding!`,
-        });
-
-        return tips;
-    }, [result, monthlyExpenses, inflationRate, targetAge, currentAge, withdrawalRate]);
-
-    // Use the helper function
     const formatCurrency = formatCurrencyFIRE;
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            {onBack && (
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="text-sm">Back to calculators</span>
-                </button>
-            )}
+            {/* Hero Banner */}
+            <HeroBanner
+                title="FIRE Calculator"
+                description="Financial Independence, Retire Early — Plan your path to freedom"
+                icon={Flame}
+                gradient="from-orange-500 to-red-600"
+                onBack={onBack}
+                onAskAI={() => setShowAIAdvisor(true)}
+                stats={[
+                    { label: 'FIRE Number', value: `₹${formatCurrency(result.fireNumber)}` },
+                    { label: 'FIRE Age', value: `${result.fireAge}` },
+                    { label: 'Progress', value: `${Math.min(result.progressPercent, 100).toFixed(0)}%` },
+                ]}
+            />
 
-            {/* Hero Section */}
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 text-white">
-                <div className="flex items-center gap-3 mb-2">
-                    <Flame className="w-8 h-8" />
-                    <h2 className="text-2xl font-bold">FIRE Calculator</h2>
-                </div>
-                <p className="text-orange-100">Financial Independence, Retire Early - Plan your path to freedom</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Input Section */}
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Your Profile</h3>
+                    <GlassCard title="Your Profile" icon={Target}>
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-4">
                                 <SliderInput
@@ -228,52 +167,36 @@ export function FIRECalculator({ onBack }: FIRECalculatorProps) {
                                 quickValues={[25000, 50000, 100000, 150000, 200000]}
                             />
                         </div>
-                    </div>
+                    </GlassCard>
 
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Assumptions</h3>
+                    <GlassCard title="Assumptions" icon={Settings2}>
                         <div className="grid grid-cols-2 gap-4">
-                            <SliderInput
-                                label="Expected Return"
-                                value={expectedReturn}
-                                onChange={setExpectedReturn}
-                                min={6}
-                                max={18}
-                                step={0.5}
-                                suffix="% p.a."
-                            />
-                            <SliderInput
-                                label="Inflation Rate"
-                                value={inflationRate}
-                                onChange={setInflationRate}
-                                min={3}
-                                max={10}
-                                step={0.5}
-                                suffix="% p.a."
-                            />
-                            <SliderInput
-                                label="Safe Withdrawal Rate"
-                                value={withdrawalRate}
-                                onChange={setWithdrawalRate}
-                                min={2}
-                                max={6}
-                                step={0.5}
-                                suffix="%"
-                            />
+                            <SliderInput label="Expected Return" value={expectedReturn} onChange={setExpectedReturn} min={6} max={18} step={0.5} suffix="% p.a." />
+                            <SliderInput label="Inflation Rate" value={inflationRate} onChange={setInflationRate} min={3} max={10} step={0.5} suffix="% p.a." />
+                            <SliderInput label="Safe Withdrawal Rate" value={withdrawalRate} onChange={setWithdrawalRate} min={2} max={6} step={0.5} suffix="%" />
                         </div>
-                    </div>
+                    </GlassCard>
 
                     {/* AI Insights */}
-                    <AIInsights insights={insights} />
+                    {/* AI Advisor Modal */}
+                    <AIAdvisorModal
+                        isOpen={showAIAdvisor}
+                        onClose={() => setShowAIAdvisor(false)}
+                        calculatorName="FIRE Calculator"
+                        calculatorContext={[
+                            { label: 'Monthly Income', value: `₹${formatCurrency(monthlyExpenses + monthlyInvestment)}` },
+                            { label: 'Expenses', value: `₹${formatCurrency(monthlyExpenses)}` },
+                            { label: 'FIRE Number', value: `₹${formatCurrency(result.fireNumber)}` },
+                            { label: 'FIRE Age', value: `${result.fireAge}` },
+                        ]}
+                        generateSummary={handleGenerateSummary}
+                    />
                 </div>
 
                 {/* Results Section */}
                 <div className="space-y-6">
                     {/* Progress Gauge */}
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">
-                            FIRE Progress
-                        </h3>
+                    <GlassCard title="FIRE Progress">
                         <div className="flex justify-center mb-4">
                             <ProgressGauge
                                 value={result.progressPercent}
@@ -295,58 +218,43 @@ export function FIRECalculator({ onBack }: FIRECalculatorProps) {
                             ) : (
                                 <div className="flex items-center justify-center gap-2">
                                     <AlertTriangle className="w-5 h-5" />
-                                    <span className="font-medium">You'll reach FIRE at age {result.fireAge}</span>
+                                    <span className="font-medium">You&apos;ll reach FIRE at age {result.fireAge}</span>
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </GlassCard>
 
                     {/* Key Numbers */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-4 text-white"
-                        >
+                    <div className="grid grid-cols-2 gap-3">
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                            className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-orange-200/50 dark:border-orange-500/20 shadow-sm">
                             <div className="flex items-center gap-2 mb-1">
-                                <Target className="w-4 h-4" />
-                                <p className="text-orange-100 text-xs">FIRE Number</p>
+                                <Target className="w-4 h-4 text-orange-500" />
+                                <p className="text-gray-500 dark:text-gray-400 text-xs">FIRE Number</p>
                             </div>
-                            <p className="text-2xl font-bold">₹{formatCurrency(result.fireNumber)}</p>
-                            <p className="text-xs text-orange-100 mt-1">25x annual expenses</p>
+                            <p className="text-xl font-bold text-orange-600 dark:text-orange-400">₹{formatCurrency(result.fireNumber)}</p>
+                            <p className="text-xs text-gray-400 mt-1">25x annual expenses</p>
                         </motion.div>
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl p-4 text-white"
-                        >
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                            className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-blue-200/50 dark:border-blue-500/20 shadow-sm">
                             <div className="flex items-center gap-2 mb-1">
-                                <TrendingUp className="w-4 h-4" />
-                                <p className="text-blue-100 text-xs">Projected Corpus</p>
+                                <TrendingUp className="w-4 h-4 text-blue-500" />
+                                <p className="text-gray-500 dark:text-gray-400 text-xs">Projected Corpus</p>
                             </div>
-                            <p className="text-2xl font-bold">₹{formatCurrency(result.projectedCorpus)}</p>
-                            <p className="text-xs text-blue-100 mt-1">At age {targetAge}</p>
+                            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">₹{formatCurrency(result.projectedCorpus)}</p>
+                            <p className="text-xs text-gray-400 mt-1">At age {targetAge}</p>
                         </motion.div>
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-gray-100 dark:border-white/5"
-                        >
-                            <p className="text-gray-500 text-xs mb-1">Current Savings</p>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                            className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-gray-200/50 dark:border-white/10 shadow-sm">
+                            <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Current Savings</p>
                             <p className="text-xl font-bold text-gray-900 dark:text-white">₹{formatCurrency(currentSavings)}</p>
                         </motion.div>
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-gray-100 dark:border-white/5"
-                        >
-                            <p className="text-gray-500 text-xs mb-1">Gap to Target</p>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                            className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-gray-200/50 dark:border-white/10 shadow-sm">
+                            <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Gap to Target</p>
                             <p className={`text-xl font-bold ${result.gap > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                 {result.gap > 0 ? `₹${formatCurrency(result.gap)}` : '✓ Surplus'}
                             </p>
@@ -354,27 +262,20 @@ export function FIRECalculator({ onBack }: FIRECalculatorProps) {
                     </div>
 
                     {/* Growth Chart */}
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Path to FIRE
-                        </h3>
+                    <GlassCard title="Path to FIRE" icon={BarChart3}>
                         <GrowthChart
                             data={yearlyData}
                             height={200}
                             formatValue={(v) => `₹${formatCurrency(v)}`}
                         />
-                        {/* FIRE Line Indicator */}
                         <div className="mt-4 flex items-center gap-2 justify-center">
                             <div className="w-8 h-0.5 bg-orange-500 border-dashed" />
                             <span className="text-xs text-gray-500">FIRE Target: ₹{formatCurrency(result.fireNumber)}</span>
                         </div>
-                    </div>
+                    </GlassCard>
 
                     {/* Breakdown */}
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Corpus Breakdown at Age {targetAge}
-                        </h3>
+                    <GlassCard title={`Corpus Breakdown at Age ${targetAge}`}>
                         <div className="space-y-3">
                             <div className="flex justify-between">
                                 <span className="text-gray-600 dark:text-gray-400">From Current Savings</span>
@@ -389,7 +290,7 @@ export function FIRECalculator({ onBack }: FIRECalculatorProps) {
                                 <span className="font-bold text-blue-600">₹{formatCurrency(result.projectedCorpus)}</span>
                             </div>
                         </div>
-                    </div>
+                    </GlassCard>
                 </div>
             </div>
         </div>

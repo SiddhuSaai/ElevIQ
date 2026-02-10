@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export interface Artifact {
     id: string;
     name: string;
-    type: 'csv' | 'pdf' | 'code' | 'image' | 'html';
+    type: 'csv' | 'pdf' | 'code' | 'image' | 'html' | 'markdown';
     content: string; // base64 data or raw content
     mimeType?: string;
     language?: string; // for code: 'html', 'react', 'javascript', 'css'

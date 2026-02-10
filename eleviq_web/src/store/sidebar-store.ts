@@ -2,13 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface SidebarStore {
-    // State
-    isExpanded: boolean;
     activeSection: string;
-
-    // Actions
-    toggleSidebar: () => void;
+    isExpanded: boolean;
     setActiveSection: (section: string) => void;
+    toggleSection: (section: string) => void;
     collapseSidebar: () => void;
     expandSidebar: () => void;
 }
@@ -16,17 +13,23 @@ interface SidebarStore {
 export const useSidebarStore = create<SidebarStore>()(
     persist(
         (set) => ({
-            // Initial state
+            activeSection: 'Home',
             isExpanded: true,
-            activeSection: 'Overview',
 
-            // Actions
-            toggleSidebar: () => set((state) => ({ isExpanded: !state.isExpanded })),
+            // Used by pathname sync — just update section, never collapse
+            setActiveSection: (section: string) =>
+                set({ activeSection: section }),
 
-            setActiveSection: (section: string) => set({ activeSection: section, isExpanded: true }),
+            // Used by icon rail clicks — toggle collapse on same section
+            toggleSection: (section: string) =>
+                set((state) => {
+                    if (state.activeSection === section && state.isExpanded) {
+                        return { isExpanded: false };
+                    }
+                    return { activeSection: section, isExpanded: true };
+                }),
 
             collapseSidebar: () => set({ isExpanded: false }),
-
             expandSidebar: () => set({ isExpanded: true }),
         }),
         {

@@ -204,7 +204,7 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: AddExpenseModalP
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50">
             <div className="bg-white dark:bg-gray-800 w-full sm:max-w-lg sm:rounded-xl sm:mx-4 rounded-t-2xl max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -237,8 +237,8 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: AddExpenseModalP
                         <div
                             key={s}
                             className={`flex-1 h-1 rounded-full transition-colors ${['category', 'details', 'review'].indexOf(step) >= i
-                                    ? 'bg-blue-500'
-                                    : 'bg-gray-200 dark:bg-gray-700'
+                                ? 'bg-blue-500'
+                                : 'bg-gray-200 dark:bg-gray-700'
                                 }`}
                         />
                     ))}

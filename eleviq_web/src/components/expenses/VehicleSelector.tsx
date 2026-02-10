@@ -36,7 +36,7 @@ export function AddVehicleModal({ isOpen, onClose, onAdd, defaultFuelType = 'pet
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add New Vehicle</h3>
@@ -92,8 +92,8 @@ export function AddVehicleModal({ isOpen, onClose, onAdd, defaultFuelType = 'pet
                                     type="button"
                                     onClick={() => setFormData({ ...formData, vehicleType: type as any })}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${formData.vehicleType === type
-                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     <Icon className="w-5 h-5" />
@@ -114,12 +114,12 @@ export function AddVehicleModal({ isOpen, onClose, onAdd, defaultFuelType = 'pet
                                     type="button"
                                     onClick={() => setFormData({ ...formData, fuelType: type })}
                                     className={`py-2 px-4 rounded-lg border-2 transition-colors text-sm font-medium ${formData.fuelType === type
-                                            ? type === 'petrol'
-                                                ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-600'
-                                                : type === 'diesel'
-                                                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-600'
-                                                    : 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-600'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                                        ? type === 'petrol'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-600'
+                                            : type === 'diesel'
+                                                ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-600'
+                                                : 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-600'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     {fuelTypeLabels[type]}

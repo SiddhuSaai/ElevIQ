@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { useExpenseStore } from '@/store/expense-store';
 import { useAuthStore } from '@/store/auth-store';
@@ -93,27 +93,69 @@ export default function DashboardPage() {
         return points + weeklyStats.points;
     }, [expenses, streak, weeklyStats.points]);
 
+    // Time-aware greeting logic
+    const greetingData = useMemo(() => {
+        const hour = new Date().getHours();
+        const firstName = user?.displayName?.split(' ')[0] || 'there';
+
+        if (hour < 12) {
+            return {
+                greeting: `Good morning, ${firstName}!`,
+                emoji: '☀️',
+                gradient: 'from-amber-500 via-orange-500 to-rose-500 dark:from-amber-700 dark:via-orange-800 dark:to-rose-900',
+                message: monthlyTotal === 0
+                    ? 'Start tracking your expenses today and take control! 🚀'
+                    : "It's a beautiful day to stay on top of your finances.",
+            };
+        } else if (hour < 17) {
+            return {
+                greeting: `Good afternoon, ${firstName}!`,
+                emoji: '🌤️',
+                gradient: 'from-blue-500 via-cyan-500 to-teal-400 dark:from-blue-700 dark:via-cyan-800 dark:to-teal-900',
+                message: monthlyTotal === 0
+                    ? 'Start tracking your expenses today and take control! 🚀'
+                    : 'Keep the momentum going — you\'re doing great!',
+            };
+        } else {
+            return {
+                greeting: `Good evening, ${firstName}!`,
+                emoji: '🌙',
+                gradient: 'from-indigo-600 via-violet-600 to-purple-600 dark:from-indigo-800 dark:via-violet-900 dark:to-purple-950',
+                message: monthlyTotal === 0
+                    ? 'Start tracking your expenses today and take control! 🚀'
+                    : "Time to wind down. Here's your financial snapshot for today.",
+            };
+        }
+    }, [user?.displayName, monthlyTotal]);
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
             {/* ========== MOBILE LAYOUT ========== */}
             <div className="lg:hidden">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-xl font-bold">
-                                Hi, {user?.displayName?.split(' ')[0] || 'there'}! 👋
-                            </h1>
-                            <p className="text-blue-100 text-sm mt-0.5">
-                                {format(new Date(), 'EEEE, MMM d')}
-                            </p>
-                        </div>
-                        <Link
-                            href="/expenses/add"
-                            className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
-                        >
-                            <Plus className="w-5 h-5" />
-                        </Link>
+                {/* Warm Greeting Card */}
+                <div className={`bg-gradient-to-br ${greetingData.gradient} text-white px-5 py-6 rounded-b-3xl`}>
+                    {/* Greeting */}
+                    <h1 className="text-xl font-bold flex items-center gap-2">
+                        <span>{greetingData.emoji}</span>
+                        {greetingData.greeting}
+                    </h1>
+
+                    {/* Motivational Sub-text */}
+                    <p className="text-white/80 text-sm mt-1.5 leading-relaxed">
+                        {greetingData.message}
+                    </p>
+
+                    {/* Glass Stats Bar */}
+                    <div className="mt-4 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-xl px-4 py-3 flex items-center justify-between">
+                        {monthlyTotal > 0 && (
+                            <span className="text-sm font-medium text-white/90">
+                                ₹{monthlyTotal.toLocaleString('en-IN')} this month
+                            </span>
+                        )}
+                        <span className={`text-xs text-white/60 flex items-center gap-1.5 ${monthlyTotal === 0 ? 'ml-auto' : ''}`}>
+                            <Calendar className="w-3.5 h-3.5" />
+                            {format(new Date(), 'EEE, MMM d')}
+                        </span>
                     </div>
                 </div>
 

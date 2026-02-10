@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 interface ExpenseSummary {
     currentMonth: {
@@ -90,14 +90,12 @@ Previous Month:
 Projected month-end (at current pace): ₹${Math.round((summary.currentMonth.total / summary.daysElapsed) * summary.daysInMonth)}
 `;
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const result = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: insightsPrompt + '\n\nSpending Data:\n' + contextData,
+        });
 
-        const result = await model.generateContent([
-            insightsPrompt,
-            '\n\nSpending Data:\n' + contextData,
-        ]);
-
-        const responseText = result.response.text();
+        const responseText = result.text || '';
 
         // Parse JSON from response
         let analysisData;

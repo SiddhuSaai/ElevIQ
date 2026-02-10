@@ -1,0 +1,41 @@
+[debug] [2026-02-10T17:21:51.447Z] ----------------------------------------------------------------------
+[debug] [2026-02-10T17:21:51.448Z] Command:       /Users/saai_sidd/.nvm/versions/node/v20.19.6/bin/node /Users/saai_sidd/.nvm/versions/node/v20.19.6/bin/firebase deploy --only firestore:rules
+[debug] [2026-02-10T17:21:51.448Z] CLI Version:   15.5.1
+[debug] [2026-02-10T17:21:51.448Z] Platform:      darwin
+[debug] [2026-02-10T17:21:51.448Z] Node Version:  v20.19.6
+[debug] [2026-02-10T17:21:51.448Z] Time:          Tue Feb 10 2026 22:51:51 GMT+0530 (India Standard Time)
+[debug] [2026-02-10T17:21:51.448Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-02-10T17:21:52.022Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-10T17:21:52.022Z] > authorizing via signed-in user (saaisiddharth2004@gmail.com)
+[debug] [2026-02-10T17:21:52.022Z] [iam] checking project eleviq-app for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-02-10T17:21:52.023Z] Checked if tokens are valid: true, expires at: 1770747699453
+[debug] [2026-02-10T17:21:52.023Z] Checked if tokens are valid: true, expires at: 1770747699453
+[debug] [2026-02-10T17:21:52.023Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/eleviq-app:testIamPermissions [none]
+[debug] [2026-02-10T17:21:52.023Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/eleviq-app:testIamPermissions  x-goog-user-project=eleviq-app
+[debug] [2026-02-10T17:21:52.023Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/eleviq-app:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2026-02-10T17:21:54.019Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/eleviq-app:testIamPermissions 200
+[debug] [2026-02-10T17:21:54.019Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/eleviq-app:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'eleviq-app'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-02-10T17:21:54.022Z] Checked if tokens are valid: true, expires at: 1770747699453
+[debug] [2026-02-10T17:21:54.022Z] Checked if tokens are valid: true, expires at: 1770747699453
+[debug] [2026-02-10T17:21:54.022Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/eleviq-app/databases/(default) [none]
+[debug] [2026-02-10T17:21:55.313Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/eleviq-app/databases/(default) 200
+[debug] [2026-02-10T17:21:55.314Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/eleviq-app/databases/(default) {"name":"projects/eleviq-app/databases/(default)","uid":"7f12944a-8036-4c4a-98ee-137c0b4cb43b","createTime":"2026-02-07T14:27:08.314848Z","updateTime":"2026-02-07T14:27:08.314848Z","locationId":"asia-south1","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-02-10T16:21:55.296430Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"j","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IK7s6++3z5IDMNL18cTlx5ID"}
+[info] i  firestore: reading indexes from rules/firestore.indexes.json... 
+[info] i  cloud.firestore: checking rules/firestore.rules for compilation errors... 
+[debug] [2026-02-10T17:21:55.317Z] Checked if tokens are valid: true, expires at: 1770747699453
+[debug] [2026-02-10T17:21:55.317Z] Checked if tokens are valid: true, expires at: 1770747699453
+[debug] [2026-02-10T17:21:55.317Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/eleviq-app:test [none]
+[debug] [2026-02-10T17:21:55.317Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/eleviq-app:test [omitted]
+[debug] [2026-02-10T17:21:56.830Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/eleviq-app:test 200
+[debug] [2026-02-10T17:21:56.831Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/eleviq-app:test {}
+[info] ✔  cloud.firestore: rules file rules/firestore.rules compiled successfully 
+[debug] [2026-02-10T17:21:56.832Z] Checked if tokens are valid: true, expires at: 1770747699453
+[debug] [2026-02-10T17:21:56.832Z] Checked if tokens are valid: true, expires at: 1770747699453
+[debug] [2026-02-10T17:21:56.832Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/eleviq-app/releases pageSize=10&pageToken=

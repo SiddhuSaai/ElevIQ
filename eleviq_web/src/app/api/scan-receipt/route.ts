@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 // Category-specific extraction prompts for better accuracy
 const EXTRACTION_PROMPTS: Record<string, string> = {
@@ -198,20 +198,26 @@ export async function POST(req: NextRequest) {
         // Get category-specific prompt or use generic
         const prompt = EXTRACTION_PROMPTS[category] || EXTRACTION_PROMPTS.generic;
 
-        // Use gemini-2.0-flash which supports vision
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-        const result = await model.generateContent([
-            {
-                inlineData: {
-                    mimeType: mimeType,
-                    data: image,
+        // Use gemini-3-flash-preview which supports vision
+        const result = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        {
+                            inlineData: {
+                                mimeType: mimeType,
+                                data: image,
+                            },
+                        },
+                        { text: prompt + '\n\nIMPORTANT: Return ONLY valid JSON, no markdown formatting, no explanation. Use Indian Rupee (₹) for all amounts.' },
+                    ],
                 },
-            },
-            { text: prompt + '\n\nIMPORTANT: Return ONLY valid JSON, no markdown formatting, no explanation. Use Indian Rupee (₹) for all amounts.' },
-        ]);
+            ],
+        });
 
-        const responseText = result.response.text();
+        const responseText = result.text || '';
 
         // Parse JSON from response
         let extractedData;

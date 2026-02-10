@@ -10,7 +10,9 @@ import {
     Check,
     Clock,
     AlertCircle,
+    BellRing,
 } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { useAuthStore } from '@/store/auth-store';
 import { defaultCategories, getCategoryById } from '@/types/expense';
 import { db } from '@/lib/firebase/config';
@@ -139,157 +141,164 @@ export default function RemindersPage() {
     const totalDue = reminders.filter((r) => !r.isPaid).reduce((sum, r) => sum + r.amount, 0);
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a] p-4 lg:p-8">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Bill Reminders</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Never miss a payment</p>
-                </div>
-                <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-blue-600/25">
-                    <Plus className="w-5 h-5" />
-                    <span className="hidden sm:inline">Add Reminder</span>
-                </button>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div className="bg-white dark:bg-[#171717] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-white/5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                            <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{reminders.length}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Total Bills</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-[#171717] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-white/5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-                            <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{upcomingCount}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Upcoming</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-[#171717] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-white/5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
-                            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{overdueCount}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-[#171717] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-white/5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                            <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{totalDue.toLocaleString()}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Total Due</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                {[{ value: 'all', label: 'All' }, { value: 'upcoming', label: 'Upcoming' }, { value: 'overdue', label: 'Overdue' }, { value: 'paid', label: 'Paid' }].map((tab) => (
-                    <button key={tab.value} onClick={() => setFilter(tab.value as any)} className={`px-4 py-2 rounded-full font-medium transition-colors whitespace-nowrap ${filter === tab.value ? 'bg-blue-600 text-white' : 'bg-white dark:bg-[#171717] text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}>
-                        {tab.label}
+        <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
+            <PageHeader
+                icon={BellRing}
+                iconColor="text-amber-400"
+                title="Bill Reminders"
+                subtitle="Never miss a payment"
+                actions={
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span className="hidden sm:inline">Add Reminder</span>
                     </button>
-                ))}
-            </div>
+                }
+            />
+            <div className="p-4 lg:p-8">
 
-            {isLoading ? (
-                <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>
-            ) : filteredReminders.length === 0 ? (
-                <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 p-12 text-center">
-                    <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Bell className="w-10 h-10 text-orange-600 dark:text-orange-400" />
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                                <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{reminders.length}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Total Bills</p>
+                            </div>
+                        </div>
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No reminders</h3>
-                    <p className="text-gray-500 dark:text-gray-400 mb-6">Add bill reminders to stay on top of payments</p>
-                    <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium">
-                        <Plus className="w-5 h-5" />Add your first reminder
-                    </button>
+                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+                                <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{upcomingCount}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Upcoming</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
+                                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{overdueCount}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                                <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{totalDue.toLocaleString()}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Total Due</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            ) : (
-                <div className="space-y-4">
-                    {filteredReminders.map((item) => {
-                        const category = getCategoryById(item.categoryId);
-                        const status = getDueStatus(item.dueDate, item.isPaid);
-                        return (
-                            <div key={item.id} className={`bg-white dark:bg-[#171717] rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 p-5 hover:shadow-md transition-all ${item.isPaid ? 'opacity-60' : ''}`}>
-                                <div className="flex items-center gap-4">
-                                    <button onClick={() => handleTogglePaid(item.id, item.isPaid)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${item.isPaid ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 dark:border-gray-600 hover:border-green-500'}`}>
-                                        {item.isPaid && <Check className="w-4 h-4" />}
-                                    </button>
-                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: `${category?.color}15` }}>{category?.icon || '📋'}</div>
-                                    <div className="flex-1">
-                                        <h3 className={`font-semibold ${item.isPaid ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>{item.name}</h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.color}`}>{status.label}</span>
-                                            {item.notes && <span className="text-sm text-gray-400 dark:text-gray-500">{item.notes}</span>}
+
+                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                    {[{ value: 'all', label: 'All' }, { value: 'upcoming', label: 'Upcoming' }, { value: 'overdue', label: 'Overdue' }, { value: 'paid', label: 'Paid' }].map((tab) => (
+                        <button key={tab.value} onClick={() => setFilter(tab.value as any)} className={`px-4 py-2 rounded-full font-medium transition-colors whitespace-nowrap ${filter === tab.value ? 'bg-blue-600 text-white' : 'bg-white dark:bg-[#171717] text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}>
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                {isLoading ? (
+                    <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>
+                ) : filteredReminders.length === 0 ? (
+                    <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 p-12 text-center">
+                        <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Bell className="w-10 h-10 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No reminders</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mb-6">Add bill reminders to stay on top of payments</p>
+                        <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium">
+                            <Plus className="w-5 h-5" />Add your first reminder
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredReminders.map((item) => {
+                            const category = getCategoryById(item.categoryId);
+                            const status = getDueStatus(item.dueDate, item.isPaid);
+                            return (
+                                <div key={item.id} className={`bg-white dark:bg-[#171717] rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 p-5 hover:shadow-md transition-all ${item.isPaid ? 'opacity-60' : ''}`}>
+                                    <div className="flex items-center gap-4">
+                                        <button onClick={() => handleTogglePaid(item.id, item.isPaid)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${item.isPaid ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 dark:border-gray-600 hover:border-green-500'}`}>
+                                            {item.isPaid && <Check className="w-4 h-4" />}
+                                        </button>
+                                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: `${category?.color}15` }}>{category?.icon || '📋'}</div>
+                                        <div className="flex-1">
+                                            <h3 className={`font-semibold ${item.isPaid ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>{item.name}</h3>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.color}`}>{status.label}</span>
+                                                {item.notes && <span className="text-sm text-gray-400 dark:text-gray-500">{item.notes}</span>}
+                                            </div>
                                         </div>
+                                        <div className="text-right">
+                                            <p className={`text-lg font-bold ${item.isPaid ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>₹{item.amount.toLocaleString()}</p>
+                                        </div>
+                                        <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
                                     </div>
-                                    <div className="text-right">
-                                        <p className={`text-lg font-bold ${item.isPaid ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>₹{item.amount.toLocaleString()}</p>
-                                    </div>
-                                    <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+                            );
+                        })}
+                    </div>
+                )}
 
-            {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl w-full max-w-md p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Bill Reminder</h2>
-                            <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg"><X className="w-5 h-5 text-gray-500 dark:text-gray-400" /></button>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bill Name</label>
-                                <input type="text" value={newReminder.name} onChange={(e) => setNewReminder({ ...newReminder, name: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white" placeholder="Electricity, Rent, Internet..." />
+                {showModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-[#171717] rounded-2xl w-full max-w-md p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Bill Reminder</h2>
+                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg"><X className="w-5 h-5 text-gray-500 dark:text-gray-400" /></button>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount</label>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
-                                    <input type="number" value={newReminder.amount} onChange={(e) => setNewReminder({ ...newReminder, amount: e.target.value })} className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white" placeholder="0" />
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bill Name</label>
+                                    <input type="text" value={newReminder.name} onChange={(e) => setNewReminder({ ...newReminder, name: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white" placeholder="Electricity, Rent, Internet..." />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
+                                        <input type="number" value={newReminder.amount} onChange={(e) => setNewReminder({ ...newReminder, amount: e.target.value })} className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white" placeholder="0" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
+                                    <select value={newReminder.categoryId} onChange={(e) => setNewReminder({ ...newReminder, categoryId: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white">
+                                        <option value="">Select category</option>
+                                        {defaultCategories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Date</label>
+                                    <input type="date" value={newReminder.dueDate} onChange={(e) => setNewReminder({ ...newReminder, dueDate: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
+                                    <input type="text" value={newReminder.notes} onChange={(e) => setNewReminder({ ...newReminder, notes: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white" placeholder="Account number, reference..." />
+                                </div>
+                                <button onClick={handleAdd} disabled={!newReminder.name || !newReminder.amount || !newReminder.categoryId} className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-xl font-medium transition-colors">Add Reminder</button>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
-                                <select value={newReminder.categoryId} onChange={(e) => setNewReminder({ ...newReminder, categoryId: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white">
-                                    <option value="">Select category</option>
-                                    {defaultCategories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Date</label>
-                                <input type="date" value={newReminder.dueDate} onChange={(e) => setNewReminder({ ...newReminder, dueDate: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
-                                <input type="text" value={newReminder.notes} onChange={(e) => setNewReminder({ ...newReminder, notes: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white" placeholder="Account number, reference..." />
-                            </div>
-                            <button onClick={handleAdd} disabled={!newReminder.name || !newReminder.amount || !newReminder.categoryId} className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-xl font-medium transition-colors">Add Reminder</button>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

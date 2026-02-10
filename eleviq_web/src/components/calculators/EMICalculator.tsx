@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Download, Share2, ArrowLeft } from 'lucide-react';
-import { SliderInput, PieChart, GrowthChart, AIInsights, generateEMIInsights } from './shared';
+import { ChevronDown, Download, Share2, FileText, PieChart as PieChartIcon, BarChart3, Table } from 'lucide-react';
+import { SliderInput, PieChart, GrowthChart, HeroBanner, GlassCard, AIAdvisorModal } from './shared';
+import { generateEMISummary } from './shared/aiSummaryGenerators';
 
 interface EMICalculatorProps {
     onBack?: () => void;
@@ -15,6 +16,7 @@ export function EMICalculator({ onBack }: EMICalculatorProps) {
     const [tenure, setTenure] = useState(240);
     const [tenureType, setTenureType] = useState<'months' | 'years'>('months');
     const [showAmortization, setShowAmortization] = useState(false);
+    const [showAIAdvisor, setShowAIAdvisor] = useState(false);
 
     // Calculate EMI and related values
     const result = useMemo(() => {
@@ -73,10 +75,10 @@ export function EMICalculator({ onBack }: EMICalculatorProps) {
         return data;
     }, [amortization, principal]);
 
-    // AI Insights
-    const insights = useMemo(() => {
+    // AI Summary generator
+    const handleGenerateSummary = useCallback(() => {
         if (!result) return [];
-        return generateEMIInsights(principal, rate, result.months, result.emi, result.totalInterest);
+        return generateEMISummary(principal, rate, result.months, result.emi, result.totalInterest);
     }, [principal, rate, result]);
 
     // Pie chart data
@@ -93,23 +95,25 @@ export function EMICalculator({ onBack }: EMICalculatorProps) {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            {onBack && (
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="text-sm">Back to calculators</span>
-                </button>
-            )}
+            {/* Hero Banner */}
+            <HeroBanner
+                title="EMI Calculator"
+                description="Calculate your loan payments with precision"
+                icon={BarChart3}
+                gradient="from-blue-600 to-indigo-700"
+                onBack={onBack}
+                onAskAI={() => setShowAIAdvisor(true)}
+                stats={result ? [
+                    { label: 'Monthly EMI', value: `₹${Math.round(result.emi).toLocaleString()}` },
+                    { label: 'Total Interest', value: `₹${formatCurrency(result.totalInterest)}` },
+                    { label: 'Rate', value: `${rate}%` },
+                ] : []}
+            />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Input Section */}
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Loan Details</h3>
-
+                    <GlassCard title="Loan Details" icon={FileText}>
                         <div className="space-y-6">
                             <SliderInput
                                 label="Loan Amount"
@@ -144,8 +148,8 @@ export function EMICalculator({ onBack }: EMICalculatorProps) {
                                         <button
                                             onClick={() => setTenureType('months')}
                                             className={`px-3 py-1 text-xs rounded-md transition-all ${tenureType === 'months'
-                                                    ? 'bg-white dark:bg-white/20 text-gray-900 dark:text-white shadow-sm'
-                                                    : 'text-gray-600 dark:text-gray-400'
+                                                ? 'bg-white dark:bg-white/20 text-gray-900 dark:text-white shadow-sm'
+                                                : 'text-gray-600 dark:text-gray-400'
                                                 }`}
                                         >
                                             Months
@@ -153,8 +157,8 @@ export function EMICalculator({ onBack }: EMICalculatorProps) {
                                         <button
                                             onClick={() => setTenureType('years')}
                                             className={`px-3 py-1 text-xs rounded-md transition-all ${tenureType === 'years'
-                                                    ? 'bg-white dark:bg-white/20 text-gray-900 dark:text-white shadow-sm'
-                                                    : 'text-gray-600 dark:text-gray-400'
+                                                ? 'bg-white dark:bg-white/20 text-gray-900 dark:text-white shadow-sm'
+                                                : 'text-gray-600 dark:text-gray-400'
                                                 }`}
                                         >
                                             Years
@@ -173,7 +177,7 @@ export function EMICalculator({ onBack }: EMICalculatorProps) {
                                 />
                             </div>
                         </div>
-                    </div>
+                    </GlassCard>
 
                     {/* Results Cards */}
                     {result && (
@@ -182,63 +186,68 @@ export function EMICalculator({ onBack }: EMICalculatorProps) {
                             animate={{ opacity: 1, y: 0 }}
                             className="grid grid-cols-3 gap-3"
                         >
-                            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
-                                <p className="text-blue-100 text-xs mb-1">Monthly EMI</p>
-                                <p className="text-xl font-bold">₹{Math.round(result.emi).toLocaleString()}</p>
+                            <div className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-blue-200/50 dark:border-blue-500/20 shadow-sm">
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Monthly EMI</p>
+                                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">₹{Math.round(result.emi).toLocaleString()}</p>
                             </div>
-                            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
-                                <p className="text-green-100 text-xs mb-1">Total Payment</p>
-                                <p className="text-xl font-bold">₹{formatCurrency(result.totalPayment)}</p>
+                            <div className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-green-200/50 dark:border-green-500/20 shadow-sm">
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Total Payment</p>
+                                <p className="text-xl font-bold text-green-600 dark:text-green-400">₹{formatCurrency(result.totalPayment)}</p>
                             </div>
-                            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
-                                <p className="text-orange-100 text-xs mb-1">Total Interest</p>
-                                <p className="text-xl font-bold">₹{formatCurrency(result.totalInterest)}</p>
+                            <div className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-orange-200/50 dark:border-orange-500/20 shadow-sm">
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Total Interest</p>
+                                <p className="text-xl font-bold text-orange-600 dark:text-orange-400">₹{formatCurrency(result.totalInterest)}</p>
                             </div>
                         </motion.div>
                     )}
 
-                    {/* AI Insights */}
-                    <AIInsights insights={insights} />
+                    {/* AI Advisor Modal */}
+                    <AIAdvisorModal
+                        isOpen={showAIAdvisor}
+                        onClose={() => setShowAIAdvisor(false)}
+                        calculatorName="EMI Calculator"
+                        calculatorContext={result ? [
+                            { label: 'Amount', value: `₹${formatCurrency(principal)}` },
+                            { label: 'Rate', value: `${rate}%` },
+                            { label: 'Tenure', value: `${tenureType === 'years' ? tenure : Math.round(tenure / 12)} yrs` },
+                            { label: 'EMI', value: `₹${Math.round(result.emi).toLocaleString()}` },
+                        ] : []}
+                        generateSummary={handleGenerateSummary}
+                    />
                 </div>
 
                 {/* Visualization Section */}
                 <div className="space-y-6">
                     {/* Pie Chart */}
                     {result && (
-                        <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                Payment Breakdown
-                            </h3>
+                        <GlassCard title="Payment Breakdown" icon={PieChartIcon}>
                             <PieChart data={pieData} size={200} />
-                        </div>
+                        </GlassCard>
                     )}
 
                     {/* Balance Over Time Chart */}
                     {yearlyData.length > 0 && (
-                        <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                Principal Balance Over Time
-                            </h3>
+                        <GlassCard title="Principal Balance Over Time" icon={BarChart3}>
                             <GrowthChart
                                 data={yearlyData}
                                 height={200}
                                 formatValue={(v) => `₹${formatCurrency(v)}`}
                             />
-                        </div>
+                        </GlassCard>
                     )}
                 </div>
             </div>
 
             {/* Amortization Schedule */}
             {result && (
-                <div className="bg-white dark:bg-[#171717] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden">
+                <GlassCard title="Amortization Schedule" icon={Table} noPadding>
                     <button
                         onClick={() => setShowAmortization(!showAmortization)}
                         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                     >
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            📋 Amortization Schedule
-                        </h3>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {showAmortization ? 'Hide' : 'Show'} full schedule ({amortization.length} months)
+                        </span>
                         <motion.div animate={{ rotate: showAmortization ? 180 : 0 }}>
                             <ChevronDown className="w-5 h-5 text-gray-400" />
                         </motion.div>
@@ -286,16 +295,16 @@ export function EMICalculator({ onBack }: EMICalculatorProps) {
                             </motion.div>
                         )}
                     </AnimatePresence>
-                </div>
+                </GlassCard>
             )}
 
             {/* Action Buttons */}
             <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-white/80 dark:hover:bg-white/10 transition-colors">
                     <Download className="w-4 h-4" />
                     <span className="text-sm font-medium">Download PDF</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-white/80 dark:hover:bg-white/10 transition-colors">
                     <Share2 className="w-4 h-4" />
                     <span className="text-sm font-medium">Share</span>
                 </button>

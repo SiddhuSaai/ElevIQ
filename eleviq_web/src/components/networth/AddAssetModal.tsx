@@ -73,7 +73,7 @@ export default function AddAssetModal({ isOpen, onClose, onAdd }: AddAssetModalP
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                    className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
                     onClick={onClose}
                 >
                     <motion.div
@@ -116,8 +116,8 @@ export default function AddAssetModal({ isOpen, onClose, onAdd }: AddAssetModalP
                                                 type="button"
                                                 onClick={() => setCategory(cat.id)}
                                                 className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${isSelected
-                                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                                                     }`}
                                             >
                                                 <Icon
@@ -125,8 +125,8 @@ export default function AddAssetModal({ isOpen, onClose, onAdd }: AddAssetModalP
                                                     style={{ color: isSelected ? cat.color : '#9CA3AF' }}
                                                 />
                                                 <span className={`text-xs font-medium ${isSelected
-                                                        ? 'text-green-700 dark:text-green-400'
-                                                        : 'text-gray-500 dark:text-gray-400'
+                                                    ? 'text-green-700 dark:text-green-400'
+                                                    : 'text-gray-500 dark:text-gray-400'
                                                     }`}>
                                                     {cat.name.split(' ')[0]}
                                                 </span>

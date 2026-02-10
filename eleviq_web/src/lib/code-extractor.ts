@@ -41,8 +41,15 @@ export function extractCodeBlocks(content: string): {
             (code.includes('<body') && code.includes('</body>'))
         );
 
+        // For Markdown, must have headings or tables (structured report)
+        const isCompleteMarkdown = (language === 'markdown' || language === 'md') && isSubstantial && (
+            code.includes('# ') ||
+            code.includes('## ') ||
+            code.includes('| ')
+        );
+
         // For other languages, must have significant code structure
-        const isCompleteCode = language !== 'html' && isSubstantial && (
+        const isCompleteCode = language !== 'html' && language !== 'markdown' && language !== 'md' && isSubstantial && (
             code.includes('function') ||
             code.includes('class') ||
             code.includes('const ') ||
@@ -51,7 +58,7 @@ export function extractCodeBlocks(content: string): {
         );
 
         // Only create artifact if it's a complete substantial block
-        if (isCompleteHTML || isCompleteCode) {
+        if (isCompleteHTML || isCompleteMarkdown || isCompleteCode) {
             const name = generateCodeName(language, code, blockCounter);
 
             codeBlocks.push({
@@ -99,8 +106,8 @@ function generateCodeName(language: string, code: string, index: number): string
         python: 'Python Script',
         sql: 'SQL Query',
         json: 'JSON Data',
-        markdown: 'Markdown',
-        md: 'Markdown',
+        markdown: 'Financial Report',
+        md: 'Financial Report',
     };
 
     const baseLabel = langLabels[language] || `${language.toUpperCase()} Code`;
@@ -128,7 +135,10 @@ function generateCodeName(language: string, code: string, index: number): string
 /**
  * Determine the artifact type from language
  */
-export function getArtifactType(language: string): 'html' | 'code' {
+export function getArtifactType(language: string): 'html' | 'code' | 'markdown' {
     const htmlTypes = ['html', 'htm'];
-    return htmlTypes.includes(language) ? 'html' : 'code';
+    const markdownTypes = ['markdown', 'md'];
+    if (htmlTypes.includes(language)) return 'html';
+    if (markdownTypes.includes(language)) return 'markdown';
+    return 'code';
 }

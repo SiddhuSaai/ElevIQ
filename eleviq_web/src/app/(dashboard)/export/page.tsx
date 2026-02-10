@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { Download, FileText, FileSpreadsheet, Loader2, FileDown } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { useExpenseStore } from '@/store/expense-store';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
@@ -97,98 +98,96 @@ export default function ExportPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] p-4 lg:p-8">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Export Reports</h1>
-                <p className="text-gray-500 dark:text-gray-400 mt-1">Download your expense data as PDF or CSV</p>
-            </div>
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
+            <PageHeader icon={FileDown} iconColor="text-cyan-400" title="Export Data" />
+            <div className="p-4 lg:p-8">
 
-            <div className="max-w-2xl">
-                {/* Date Range Selection */}
-                <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select Date Range</h2>
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
-                        {dateRanges.map(range => (
+                <div className="max-w-2xl">
+                    {/* Date Range Selection */}
+                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 mb-6">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select Date Range</h2>
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+                            {dateRanges.map(range => (
+                                <button
+                                    key={range.id}
+                                    onClick={() => setSelectedRange(range.id)}
+                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${selectedRange === range.id
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10'
+                                        }`}
+                                >
+                                    {range.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Format Selection */}
+                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 mb-6">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select Format</h2>
+                        <div className="grid grid-cols-2 gap-4">
                             <button
-                                key={range.id}
-                                onClick={() => setSelectedRange(range.id)}
-                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${selectedRange === range.id
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10'
+                                onClick={() => setSelectedFormat('pdf')}
+                                className={`p-4 rounded-xl border-2 transition-all ${selectedFormat === 'pdf'
+                                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                                     }`}
                             >
-                                {range.label}
+                                <FileText className={`w-8 h-8 mb-2 mx-auto ${selectedFormat === 'pdf' ? 'text-blue-600' : 'text-gray-400'}`} />
+                                <p className="font-medium text-gray-900 dark:text-white">PDF Report</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">With charts & summary</p>
                             </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Format Selection */}
-                <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select Format</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            onClick={() => setSelectedFormat('pdf')}
-                            className={`p-4 rounded-xl border-2 transition-all ${selectedFormat === 'pdf'
-                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                }`}
-                        >
-                            <FileText className={`w-8 h-8 mb-2 mx-auto ${selectedFormat === 'pdf' ? 'text-blue-600' : 'text-gray-400'}`} />
-                            <p className="font-medium text-gray-900 dark:text-white">PDF Report</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">With charts & summary</p>
-                        </button>
-                        <button
-                            onClick={() => setSelectedFormat('csv')}
-                            className={`p-4 rounded-xl border-2 transition-all ${selectedFormat === 'csv'
-                                ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                }`}
-                        >
-                            <FileSpreadsheet className={`w-8 h-8 mb-2 mx-auto ${selectedFormat === 'csv' ? 'text-green-600' : 'text-gray-400'}`} />
-                            <p className="font-medium text-gray-900 dark:text-white">CSV Data</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">For Excel/Sheets</p>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Preview */}
-                <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Export Preview</h2>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Transactions</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredExpenses.length}</p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Total Amount</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{totalAmount.toLocaleString()}</p>
+                            <button
+                                onClick={() => setSelectedFormat('csv')}
+                                className={`p-4 rounded-xl border-2 transition-all ${selectedFormat === 'csv'
+                                    ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                    }`}
+                            >
+                                <FileSpreadsheet className={`w-8 h-8 mb-2 mx-auto ${selectedFormat === 'csv' ? 'text-green-600' : 'text-gray-400'}`} />
+                                <p className="font-medium text-gray-900 dark:text-white">CSV Data</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">For Excel/Sheets</p>
+                            </button>
                         </div>
                     </div>
-                    {filteredExpenses.length === 0 && (
-                        <p className="text-center text-gray-400 dark:text-gray-500 py-4">No expenses in selected date range</p>
-                    )}
-                </div>
 
-                {/* Export Button */}
-                <button
-                    onClick={handleExport}
-                    disabled={isExporting || filteredExpenses.length === 0}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-xl font-medium text-lg transition-colors shadow-lg shadow-blue-600/25"
-                >
-                    {isExporting ? (
-                        <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Generating...
-                        </>
-                    ) : (
-                        <>
-                            <Download className="w-5 h-5" />
-                            Download {selectedFormat.toUpperCase()}
-                        </>
-                    )}
-                </button>
+                    {/* Preview */}
+                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 mb-6">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Export Preview</h2>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Transactions</p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredExpenses.length}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Total Amount</p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{totalAmount.toLocaleString()}</p>
+                            </div>
+                        </div>
+                        {filteredExpenses.length === 0 && (
+                            <p className="text-center text-gray-400 dark:text-gray-500 py-4">No expenses in selected date range</p>
+                        )}
+                    </div>
+
+                    {/* Export Button */}
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting || filteredExpenses.length === 0}
+                        className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-xl font-medium text-lg transition-colors shadow-lg shadow-blue-600/25"
+                    >
+                        {isExporting ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <Download className="w-5 h-5" />
+                                Download {selectedFormat.toUpperCase()}
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );

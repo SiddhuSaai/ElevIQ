@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Home, Car, GraduationCap, Plane, Wallet, TrendingUp, ArrowLeft, Download, Share2 } from 'lucide-react';
-import { SliderInput, PieChart, GrowthChart, ProgressGauge, AIInsights, generateSIPInsights } from './shared';
+import { Home, Car, GraduationCap, Plane, Wallet, TrendingUp, Download, Share2, Target, PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
+import { SliderInput, PieChart, GrowthChart, ProgressGauge, HeroBanner, GlassCard, AIAdvisorModal } from './shared';
+import { generateSIPSummary } from './shared/aiSummaryGenerators';
 
 interface SIPCalculatorProps {
     onBack?: () => void;
@@ -31,6 +32,7 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
     const [selectedRisk, setSelectedRisk] = useState('moderate');
     const [stepUpEnabled, setStepUpEnabled] = useState(false);
     const [stepUpPercent, setStepUpPercent] = useState(10);
+    const [showAIAdvisor, setShowAIAdvisor] = useState(false);
 
     const rate = riskProfiles.find((r) => r.id === selectedRisk)?.rate || 12;
 
@@ -45,7 +47,6 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
         let totalInvested: number;
 
         if (stepUpEnabled) {
-            // Step-up SIP calculation
             futureValue = 0;
             totalInvested = 0;
             let currentMonthly = monthly;
@@ -53,13 +54,9 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
             for (let year = 1; year <= years; year++) {
                 const yearlyInvested = currentMonthly * 12;
                 totalInvested += yearlyInvested;
-
-                // Future value of this year's investment
                 const yearsRemaining = years - year;
-                const monthsRemaining = yearsRemaining * 12 + 6; // Average 6 months for the year
                 const fv = currentMonthly * ((Math.pow(1 + r, 12) - 1) / r) * (1 + r);
                 futureValue += fv * Math.pow(1 + rate / 100, yearsRemaining);
-
                 currentMonthly *= (1 + stepUpPercent / 100);
             }
         } else {
@@ -120,10 +117,10 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
         }).filter((m) => m.year !== null && m.year <= years);
     }, [yearlyData, years]);
 
-    // AI Insights
-    const insights = useMemo(() => {
+    // AI Summary generator
+    const handleGenerateSummary = useCallback(() => {
         if (!result) return [];
-        return generateSIPInsights(monthly, rate, years, result.invested, result.earnings, result.futureValue);
+        return generateSIPSummary(monthly, rate, years, result.invested, result.earnings, result.futureValue);
     }, [monthly, rate, years, result]);
 
     // Goal progress
@@ -143,20 +140,23 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            {onBack && (
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="text-sm">Back to calculators</span>
-                </button>
-            )}
+            {/* Hero Banner */}
+            <HeroBanner
+                title="SIP Calculator"
+                description="Plan your systematic investment journey"
+                icon={TrendingUp}
+                gradient="from-purple-600 to-violet-700"
+                onBack={onBack}
+                onAskAI={() => setShowAIAdvisor(true)}
+                stats={result ? [
+                    { label: 'Future Value', value: formatCurrency(result.futureValue) },
+                    { label: 'Growth', value: `${result.growthMultiple.toFixed(1)}x` },
+                    { label: 'Returns', value: formatCurrency(result.earnings) },
+                ] : []}
+            />
 
             {/* Goal Selection */}
-            <div className="bg-white dark:bg-[#171717] rounded-2xl p-4 border border-gray-100 dark:border-white/5">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Investment Goal (Optional)</h3>
+            <GlassCard title="Investment Goal" icon={Target}>
                 <div className="flex gap-3 overflow-x-auto pb-2">
                     {goals.map((goal) => {
                         const Icon = goal.icon;
@@ -166,8 +166,8 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
                                 key={goal.id}
                                 onClick={() => setSelectedGoal(isSelected ? null : goal.id)}
                                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all min-w-[80px] ${isSelected
-                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                        : 'border-gray-200 dark:border-white/10 hover:border-gray-300'
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'border-gray-200 dark:border-white/10 hover:border-gray-300'
                                     }`}
                             >
                                 <div
@@ -201,14 +201,12 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
                         />
                     </motion.div>
                 )}
-            </div>
+            </GlassCard>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Input Section */}
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Investment Details</h3>
-
+                    <GlassCard title="Investment Details" icon={Wallet}>
                         <div className="space-y-6">
                             <SliderInput
                                 label="Monthly Investment"
@@ -233,8 +231,8 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
                                             key={profile.id}
                                             onClick={() => setSelectedRisk(profile.id)}
                                             className={`p-3 rounded-xl border-2 text-left transition-all ${selectedRisk === profile.id
-                                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                                    : 'border-gray-200 dark:border-white/10 hover:border-gray-300'
+                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                : 'border-gray-200 dark:border-white/10 hover:border-gray-300'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-2 mb-1">
@@ -298,7 +296,7 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </GlassCard>
 
                     {/* Results Cards */}
                     {result && (
@@ -307,41 +305,49 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
                             animate={{ opacity: 1, y: 0 }}
                             className="grid grid-cols-2 gap-3"
                         >
-                            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
-                                <p className="text-purple-100 text-xs mb-1">Total Invested</p>
-                                <p className="text-xl font-bold">{formatCurrency(result.invested)}</p>
+                            <div className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-purple-200/50 dark:border-purple-500/20 shadow-sm">
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Total Invested</p>
+                                <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{formatCurrency(result.invested)}</p>
                             </div>
-                            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
-                                <p className="text-green-100 text-xs mb-1">Est. Returns</p>
-                                <p className="text-xl font-bold">{formatCurrency(result.earnings)}</p>
+                            <div className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-green-200/50 dark:border-green-500/20 shadow-sm">
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Est. Returns</p>
+                                <p className="text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(result.earnings)}</p>
                             </div>
-                            <div className="col-span-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white">
+                            <div className="col-span-2 bg-white dark:bg-[#171717] rounded-xl p-4 border border-blue-200/50 dark:border-blue-500/20 shadow-sm">
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <p className="text-blue-100 text-xs mb-1">Total Value</p>
-                                        <p className="text-2xl font-bold">{formatCurrency(result.futureValue)}</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Total Value</p>
+                                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{formatCurrency(result.futureValue)}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-blue-100 text-xs mb-1">Growth</p>
-                                        <p className="text-lg font-bold">{result.growthMultiple.toFixed(1)}x</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Growth</p>
+                                        <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{result.growthMultiple.toFixed(1)}x</p>
                                     </div>
                                 </div>
                             </div>
                         </motion.div>
                     )}
 
-                    {/* AI Insights */}
-                    <AIInsights insights={insights} />
+                    {/* AI Advisor Modal */}
+                    <AIAdvisorModal
+                        isOpen={showAIAdvisor}
+                        onClose={() => setShowAIAdvisor(false)}
+                        calculatorName="SIP Calculator"
+                        calculatorContext={result ? [
+                            { label: 'Monthly', value: `₹${formatCurrency(monthly)}` },
+                            { label: 'Rate', value: `${rate}%` },
+                            { label: 'Years', value: `${years}` },
+                            { label: 'Total Value', value: formatCurrency(result.futureValue) },
+                        ] : []}
+                        generateSummary={handleGenerateSummary}
+                    />
                 </div>
 
                 {/* Visualization Section */}
                 <div className="space-y-6">
                     {/* Goal Progress Gauge */}
                     {selectedGoal && result && (
-                        <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">
-                                Goal Progress
-                            </h3>
+                        <GlassCard title="Goal Progress" icon={Target}>
                             <div className="flex justify-center">
                                 <ProgressGauge
                                     value={result.futureValue}
@@ -351,39 +357,30 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
                                     color={goalProgress >= 100 ? '#22c55e' : '#3b82f6'}
                                 />
                             </div>
-                        </div>
+                        </GlassCard>
                     )}
 
                     {/* Pie Chart */}
                     {result && (
-                        <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                Investment Breakdown
-                            </h3>
+                        <GlassCard title="Investment Breakdown" icon={PieChartIcon}>
                             <PieChart data={pieData} size={200} />
-                        </div>
+                        </GlassCard>
                     )}
 
                     {/* Wealth Growth Chart */}
                     {yearlyData.length > 0 && (
-                        <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                Wealth Growth Over Time
-                            </h3>
+                        <GlassCard title="Wealth Growth Over Time" icon={BarChart3}>
                             <GrowthChart
                                 data={yearlyData}
                                 height={200}
                                 formatValue={(v) => formatCurrency(v)}
                             />
-                        </div>
+                        </GlassCard>
                     )}
 
                     {/* Milestones */}
                     {milestones.length > 0 && (
-                        <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                🎯 Milestone Tracker
-                            </h3>
+                        <GlassCard title="Milestone Tracker" icon={Target}>
                             <div className="space-y-3">
                                 {milestones.map((milestone, index) => (
                                     <motion.div
@@ -412,18 +409,18 @@ export function SIPCalculator({ onBack }: SIPCalculatorProps) {
                                     </motion.div>
                                 ))}
                             </div>
-                        </div>
+                        </GlassCard>
                     )}
                 </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-white/80 dark:hover:bg-white/10 transition-colors">
                     <Download className="w-4 h-4" />
                     <span className="text-sm font-medium">Download</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-white/80 dark:hover:bg-white/10 transition-colors">
                     <Share2 className="w-4 h-4" />
                     <span className="text-sm font-medium">Share</span>
                 </button>

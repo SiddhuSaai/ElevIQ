@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import AppSidebar from '@/components/layout/AppSidebar';
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNav from '@/components/navigation/bottom-nav';
+import MobileHeader from '@/components/layout/MobileHeader';
 import { useSidebarStore } from '@/store/sidebar-store';
 
 export default function DashboardLayout({
@@ -16,6 +17,30 @@ export default function DashboardLayout({
     const router = useRouter();
     const { isAuthenticated, isLoading } = useAuthStore();
     const { isExpanded } = useSidebarStore();
+    const pathname = usePathname();
+    const isChatPage = pathname?.startsWith('/chat');
+
+    // Auto-hide bottom nav on scroll
+    const [navHidden, setNavHidden] = useState(false);
+    const lastScrollY = useRef(0);
+
+    const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
+        const currentY = e.currentTarget.scrollTop;
+        const threshold = 10;
+
+        if (currentY < 10) {
+            // Always show at top
+            setNavHidden(false);
+        } else if (currentY > lastScrollY.current + threshold) {
+            // Scrolling down past threshold
+            setNavHidden(true);
+        } else if (currentY < lastScrollY.current) {
+            // Scrolling up
+            setNavHidden(false);
+        }
+
+        lastScrollY.current = currentY;
+    }, []);
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -34,14 +59,13 @@ export default function DashboardLayout({
         );
     }
 
-    // Calculate main content margin based on sidebar state
-    // Icon rail: 56px, Panel: 220px (when expanded)
-    const sidebarWidth = isExpanded ? 56 + 220 : 56;
+    // Dynamic sidebar width: icon rail (56px) + panel (220px when expanded)
+    const sidebarWidth = isExpanded ? 276 : 56;
 
     return (
-        <div className="h-screen overflow-hidden bg-gray-50 dark:bg-[#0a0a0a]">
+        <div className="bg-gray-50 dark:bg-[#0a0a0a]">
             {/* Desktop Layout */}
-            <div className="hidden lg:block">
+            <div className="hidden lg:block h-screen overflow-hidden">
                 {/* Header - Full Width at Top */}
                 <AppHeader />
 
@@ -61,11 +85,12 @@ export default function DashboardLayout({
             </div>
 
             {/* Mobile/Tablet Layout - Bottom Nav */}
-            <div className="lg:hidden">
-                <main className="pb-20">
+            <div className="lg:hidden flex flex-col h-screen">
+                {!isChatPage && <MobileHeader />}
+                <main className={`flex-1 overflow-y-auto ${isChatPage ? '' : 'pb-20'}`} onScroll={handleScroll}>
                     {children}
                 </main>
-                <BottomNav />
+                {!isChatPage && <BottomNav hidden={navHidden} />}
             </div>
         </div>
     );

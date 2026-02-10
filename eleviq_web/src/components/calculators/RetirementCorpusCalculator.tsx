@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Flame, TrendingUp } from 'lucide-react';
-import { SliderInput, ProgressGauge, GrowthChart, AIInsights } from './shared';
+import { useState, useMemo, useCallback } from 'react';
+import { Flame, Users, Settings2, BarChart3 } from 'lucide-react';
+import { SliderInput, ProgressGauge, GrowthChart, HeroBanner, GlassCard, AIAdvisorModal } from './shared';
+import { generateGenericSummary } from './shared/aiSummaryGenerators';
 
 interface RetirementCorpusCalculatorProps {
     onBack?: () => void;
@@ -17,53 +17,28 @@ export function RetirementCorpusCalculator({ onBack }: RetirementCorpusCalculato
     const [expectedReturn, setExpectedReturn] = useState(12);
     const [inflationRate, setInflationRate] = useState(6);
     const [lifeExpectancy, setLifeExpectancy] = useState(85);
+    const [showAIAdvisor, setShowAIAdvisor] = useState(false);
 
     const result = useMemo(() => {
         const yearsToRetirement = retirementAge - currentAge;
         const yearsInRetirement = lifeExpectancy - retirementAge;
-
-        // Future monthly expenses at retirement (inflation adjusted)
         const futureMonthlyExpenses = monthlyExpenses * Math.pow(1 + inflationRate / 100, yearsToRetirement);
-
-        // Required corpus for retirement (using 4% rule variant)
         const realReturnInRetirement = (expectedReturn - inflationRate) / 100;
         const annualExpensesAtRetirement = futureMonthlyExpenses * 12;
-
-        // Present value of retirement expenses
-        const requiredCorpus = annualExpensesAtRetirement *
-            ((1 - Math.pow(1 + realReturnInRetirement, -yearsInRetirement)) / realReturnInRetirement);
-
-        // Future value of current savings
+        const requiredCorpus = annualExpensesAtRetirement * ((1 - Math.pow(1 + realReturnInRetirement, -yearsInRetirement)) / realReturnInRetirement);
         const fvCurrentSavings = currentSavings * Math.pow(1 + expectedReturn / 100, yearsToRetirement);
-
-        // Gap to fill
         const gap = requiredCorpus - fvCurrentSavings;
-
-        // Monthly SIP required
         const r = expectedReturn / 12 / 100;
         const n = yearsToRetirement * 12;
-        const monthlySIP = gap > 0
-            ? (gap * r) / ((Math.pow(1 + r, n) - 1) * (1 + r))
-            : 0;
-
+        const monthlySIP = gap > 0 ? (gap * r) / ((Math.pow(1 + r, n) - 1) * (1 + r)) : 0;
         const progress = Math.min(100, (fvCurrentSavings / requiredCorpus) * 100);
-
-        return {
-            requiredCorpus,
-            fvCurrentSavings,
-            gap: Math.max(0, gap),
-            monthlySIP: Math.max(0, monthlySIP),
-            futureMonthlyExpenses,
-            progress,
-            yearsToRetirement,
-        };
+        return { requiredCorpus, fvCurrentSavings, gap: Math.max(0, gap), monthlySIP: Math.max(0, monthlySIP), futureMonthlyExpenses, progress, yearsToRetirement };
     }, [currentAge, retirementAge, monthlyExpenses, currentSavings, expectedReturn, inflationRate, lifeExpectancy]);
 
     const yearlyData = useMemo(() => {
         const data = [];
         let savings = currentSavings;
         const monthlyContribution = result.monthlySIP;
-
         for (let year = 0; year <= result.yearsToRetirement; year++) {
             data.push({ year, value: savings });
             savings = savings * (1 + expectedReturn / 100) + (monthlyContribution * 12);
@@ -77,141 +52,62 @@ export function RetirementCorpusCalculator({ onBack }: RetirementCorpusCalculato
         return `₹${value.toLocaleString()}`;
     };
 
-    const insights = useMemo(() => {
-        const tips: { type: 'tip' | 'warning' | 'goal'; title: string; message: string }[] = [];
-
-        tips.push({
-            type: 'goal',
-            title: 'Retirement Corpus',
-            message: `You need ${formatCurrency(result.requiredCorpus)} for a comfortable retirement at age ${retirementAge}.`,
+    const handleGenerateSummary = useCallback(() => {
+        return generateGenericSummary('Retirement Corpus', [
+            { label: 'Expenses', value: `₹${monthlyExpenses.toLocaleString()}` },
+            { label: 'Retire At', value: `${retirementAge}` },
+        ], {
+            summaryText: `To maintain your current lifestyle of ₹${monthlyExpenses.toLocaleString()}/month after retirement at age ${retirementAge}, you need a corpus of ${formatCurrency(result.requiredCorpus)}. Your current savings of ${formatCurrency(currentSavings)} will grow to ${formatCurrency(result.fvCurrentSavings)}, leaving a gap of ${formatCurrency(result.gap)} that requires a monthly SIP of ${formatCurrency(result.monthlySIP)}.`,
+            insightText: `At ${inflationRate}% inflation, your monthly expenses will be ${formatCurrency(result.futureMonthlyExpenses)} at retirement. ${result.progress < 50 ? 'You are below 50% progress — the earlier you start, the less you need to invest monthly thanks to compounding.' : 'Good progress! You\'re on track with ' + result.progress.toFixed(0) + '% of your goal covered.'} A ${result.yearsToRetirement}-year investment horizon gives you good time to ride out market volatility.`,
+            recommendationText: `Start with equity-heavy allocation (70-80%) in your early years and gradually shift to debt as you approach retirement. Consider inflation-protected instruments like equity mutual funds for long-term goals. Build an emergency fund covering 6-12 months of expenses before aggressive investing.`,
         });
-
-        tips.push({
-            type: 'tip',
-            title: 'Monthly Investment',
-            message: `Invest ${formatCurrency(result.monthlySIP)}/month to meet your retirement goal.`,
-        });
-
-        if (result.progress < 50) {
-            tips.push({
-                type: 'warning',
-                title: 'Start Now',
-                message: 'The earlier you start, the less you need to invest monthly due to compounding.',
-            });
-        }
-
-        return tips;
-    }, [result, retirementAge]);
+    }, [monthlyExpenses, retirementAge, currentSavings, inflationRate, result]);
 
     return (
         <div className="space-y-6">
-            {onBack && (
-                <button onClick={onBack} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="text-sm">Back to calculators</span>
-                </button>
-            )}
+            <HeroBanner
+                title="Retirement Corpus"
+                description="Calculate how much you need for a worry-free retirement"
+                icon={Flame}
+                gradient="from-red-500 to-rose-600"
+                onBack={onBack}
+                onAskAI={() => setShowAIAdvisor(true)}
+                stats={[
+                    { label: 'Corpus Needed', value: formatCurrency(result.requiredCorpus) },
+                    { label: 'Monthly SIP', value: formatCurrency(result.monthlySIP) },
+                    { label: 'Progress', value: `${result.progress.toFixed(0)}%` },
+                ]}
+            />
 
-            <div className="bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl p-6 text-white">
-                <div className="flex items-center gap-3 mb-2">
-                    <Flame className="w-8 h-8" />
-                    <h2 className="text-2xl font-bold">Retirement Corpus</h2>
-                </div>
-                <p className="text-red-100">Calculate how much you need for a worry-free retirement</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Your Profile</h3>
+                    <GlassCard title="Your Profile" icon={Users}>
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-4">
-                                <SliderInput
-                                    label="Current Age"
-                                    value={currentAge}
-                                    onChange={setCurrentAge}
-                                    min={20}
-                                    max={55}
-                                    step={1}
-                                    suffix=" yrs"
-                                />
-                                <SliderInput
-                                    label="Retire At"
-                                    value={retirementAge}
-                                    onChange={setRetirementAge}
-                                    min={currentAge + 5}
-                                    max={70}
-                                    step={1}
-                                    suffix=" yrs"
-                                />
+                                <SliderInput label="Current Age" value={currentAge} onChange={setCurrentAge} min={20} max={55} step={1} suffix=" yrs" />
+                                <SliderInput label="Retire At" value={retirementAge} onChange={setRetirementAge} min={currentAge + 5} max={70} step={1} suffix=" yrs" />
                             </div>
-                            <SliderInput
-                                label="Monthly Expenses"
-                                value={monthlyExpenses}
-                                onChange={setMonthlyExpenses}
-                                min={20000}
-                                max={500000}
-                                step={5000}
-                                prefix="₹"
-                                quickValues={[30000, 50000, 75000, 100000]}
-                            />
-                            <SliderInput
-                                label="Current Savings"
-                                value={currentSavings}
-                                onChange={setCurrentSavings}
-                                min={0}
-                                max={50000000}
-                                step={100000}
-                                prefix="₹"
-                                formatValue={(v) => formatCurrency(v)}
-                            />
+                            <SliderInput label="Monthly Expenses" value={monthlyExpenses} onChange={setMonthlyExpenses} min={20000} max={500000} step={5000} prefix="₹" quickValues={[30000, 50000, 75000, 100000]} />
+                            <SliderInput label="Current Savings" value={currentSavings} onChange={setCurrentSavings} min={0} max={50000000} step={100000} prefix="₹" formatValue={(v) => formatCurrency(v)} />
                         </div>
-                    </div>
+                    </GlassCard>
 
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Assumptions</h3>
+                    <GlassCard title="Assumptions" icon={Settings2}>
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-4">
-                                <SliderInput
-                                    label="Expected Return"
-                                    value={expectedReturn}
-                                    onChange={setExpectedReturn}
-                                    min={6}
-                                    max={18}
-                                    step={0.5}
-                                    suffix="% p.a."
-                                />
-                                <SliderInput
-                                    label="Inflation"
-                                    value={inflationRate}
-                                    onChange={setInflationRate}
-                                    min={3}
-                                    max={10}
-                                    step={0.5}
-                                    suffix="% p.a."
-                                />
+                                <SliderInput label="Expected Return" value={expectedReturn} onChange={setExpectedReturn} min={6} max={18} step={0.5} suffix="% p.a." />
+                                <SliderInput label="Inflation" value={inflationRate} onChange={setInflationRate} min={3} max={10} step={0.5} suffix="% p.a." />
                             </div>
-                            <SliderInput
-                                label="Life Expectancy"
-                                value={lifeExpectancy}
-                                onChange={setLifeExpectancy}
-                                min={70}
-                                max={100}
-                                step={1}
-                                suffix=" yrs"
-                            />
+                            <SliderInput label="Life Expectancy" value={lifeExpectancy} onChange={setLifeExpectancy} min={70} max={100} step={1} suffix=" yrs" />
                         </div>
-                    </div>
+                    </GlassCard>
                 </div>
 
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Your Retirement Plan</h3>
-
+                    <GlassCard title="Your Retirement Plan">
                         <div className="flex justify-center mb-6">
                             <ProgressGauge value={result.progress} max={100} label="Progress" />
                         </div>
-
                         <div className="bg-gradient-to-r from-red-500/10 to-rose-500/10 rounded-xl p-6 text-center mb-6">
                             <p className="text-sm text-gray-500 dark:text-gray-400">Corpus Required</p>
                             <p className="text-4xl font-bold text-red-600">{formatCurrency(result.requiredCorpus)}</p>
@@ -219,7 +115,6 @@ export function RetirementCorpusCalculator({ onBack }: RetirementCorpusCalculato
                                 Future expenses: {formatCurrency(result.futureMonthlyExpenses)}/month
                             </p>
                         </div>
-
                         <div className="grid grid-cols-2 gap-4">
                             <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-xl text-center">
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Monthly SIP</p>
@@ -230,14 +125,24 @@ export function RetirementCorpusCalculator({ onBack }: RetirementCorpusCalculato
                                 <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(result.gap)}</p>
                             </div>
                         </div>
-                    </div>
+                    </GlassCard>
 
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 border border-gray-100 dark:border-white/5">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Projected Growth</h3>
+                    <GlassCard title="Projected Growth" icon={BarChart3}>
                         <GrowthChart data={yearlyData} />
-                    </div>
+                    </GlassCard>
 
-                    <AIInsights insights={insights} />
+                    <AIAdvisorModal
+                        isOpen={showAIAdvisor}
+                        onClose={() => setShowAIAdvisor(false)}
+                        calculatorName="Retirement Corpus"
+                        calculatorContext={[
+                            { label: 'Expenses', value: `₹${monthlyExpenses.toLocaleString()}` },
+                            { label: 'Retire At', value: `${retirementAge} yrs` },
+                            { label: 'Corpus', value: formatCurrency(result.requiredCorpus) },
+                            { label: 'Monthly SIP', value: formatCurrency(result.monthlySIP) },
+                        ]}
+                        generateSummary={handleGenerateSummary}
+                    />
                 </div>
             </div>
         </div>

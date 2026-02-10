@@ -1,26 +1,27 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Receipt, PieChart, Plus, User } from 'lucide-react';
+import { Home, Receipt, PieChart, Sparkles, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 interface BottomNavProps {
     className?: string;
+    hidden?: boolean;
 }
 
-export default function BottomNav({ className }: BottomNavProps) {
+export default function BottomNav({ className, hidden }: BottomNavProps) {
     const pathname = usePathname();
 
     const navItems = [
         { href: '/dashboard', icon: Home, label: 'Home' },
         { href: '/expenses', icon: Receipt, label: 'Expenses' },
-        { href: '/expenses/add', icon: Plus, label: 'Add', isCenter: true },
+        { href: '/chat', icon: Sparkles, label: 'AI Chat', isCenter: true },
         { href: '/analytics', icon: PieChart, label: 'Analytics' },
         { href: '/profile', icon: User, label: 'Profile' },
     ];
 
     return (
-        <nav className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-[#171717] border-t border-gray-200 dark:border-white/5 z-50 ${className}`}>
+        <nav className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-[#171717] border-t border-gray-200 dark:border-white/5 z-50 transition-transform duration-300 ease-in-out ${hidden ? 'translate-y-full' : 'translate-y-0'} ${className}`}>
             <div className="max-w-4xl mx-auto">
                 <div className="flex items-center justify-around py-2">
                     {navItems.map((item) => {

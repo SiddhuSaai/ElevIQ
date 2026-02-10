@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     Send,
     Bot,
@@ -80,6 +81,7 @@ const mockConversations: Conversation[] = [
 ];
 
 export default function ChatPage() {
+    const router = useRouter();
     const { user } = useAuthStore();
     const { expenses, monthlyTotal, categoryTotals } = useExpenseStore();
     const [messages, setMessages] = useState<Message[]>([]);
@@ -87,12 +89,12 @@ export default function ChatPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false); // Closed by default
     const { collapseSidebar, expandSidebar } = useSidebarStore();
-    const { isPanelOpen, addArtifact } = useArtifactsStore();
+    const { isPanelOpen, addArtifact, closePanel } = useArtifactsStore();
     const { actualTheme } = useTheme();
     const [activeConversation, setActiveConversation] = useState<string | null>(null);
     const [attachMenuOpen, setAttachMenuOpen] = useState(false);
     const [modelMenuOpen, setModelMenuOpen] = useState(false);
-    const [selectedModel, setSelectedModel] = useState('gemini-1.5-pro');
+    const [selectedModel, setSelectedModel] = useState('gemini-3-flash-preview');
     const [webSearchEnabled, setWebSearchEnabled] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
     const [streamingMessage, setStreamingMessage] = useState<string>('');
@@ -112,9 +114,8 @@ export default function ChatPage() {
     const attachMenuRef = useRef<HTMLDivElement>(null);
 
     const aiModels = [
-        { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Most capable' },
-        { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Fast responses' },
-        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Latest model' },
+        { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', description: 'Fast & intelligent' },
+        { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', description: 'Most capable' },
     ];
 
     const scrollToBottom = () => {
@@ -223,9 +224,11 @@ Recent Expenses: ${expenses.slice(0, 5).map(e => `${e.description}: ₹${e.amoun
 
         // Show generating artifact card if files are attached
         if (fileData.length > 0) {
+            const fileName = attachedFiles[0]?.name || 'File Analysis';
+            const baseName = fileName.replace(/\.[^/.]+$/, ''); // Remove extension
             setGeneratingArtifact({
-                name: 'Bank Statement Analysis',
-                type: 'html',
+                name: `${baseName} Analysis`,
+                type: 'markdown',
                 isGenerating: true,
             });
         }
@@ -247,6 +250,7 @@ Recent Expenses: ${expenses.slice(0, 5).map(e => `${e.description}: ₹${e.amoun
                 body: JSON.stringify({
                     message: content || 'Please analyze the attached file(s).',
                     context: buildContext(),
+                    model: selectedModel,
                     files: fileData,
                     history: messages.slice(-10).map((m) => ({
                         role: m.role,
@@ -435,121 +439,176 @@ Recent Expenses: ${expenses.slice(0, 5).map(e => `${e.description}: ₹${e.amoun
 
     return (
         <div className={`h-full flex overflow-hidden ${actualTheme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
-            {/* Sidebar */}
+            {/* Conversation Sidebar — overlay on mobile, side-by-side on desktop */}
             <AnimatePresence mode="wait">
                 {sidebarOpen && (
-                    <motion.aside
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 260, opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className={`h-full flex flex-col overflow-hidden border-r ${actualTheme === 'dark'
-                            ? 'bg-[#171717] border-white/5'
-                            : 'bg-white border-gray-200'
-                            }`}
-                    >
-                        {/* Sidebar Header */}
-                        <div className="p-3">
-                            <button
-                                onClick={startNewChat}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${actualTheme === 'dark'
-                                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                                    }`}
-                            >
-                                <Plus className="w-5 h-5" />
-                                <span className="text-sm font-medium">New chat</span>
-                            </button>
-                        </div>
+                    <>
+                        {/* Mobile backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                            onClick={() => {
+                                setSidebarOpen(false);
+                                expandSidebar();
+                            }}
+                        />
 
-                        {/* Conversations List */}
-                        <div className="flex-1 overflow-y-auto px-2">
-                            <div className="mb-1">
-                                <p className={`px-3 py-2 text-xs font-medium uppercase tracking-wider ${actualTheme === 'dark' ? 'text-white/40' : 'text-gray-400'
+                        <motion.aside
+                            initial={{ x: -220, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -220, opacity: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                            className={`
+                                w-[220px] h-full flex flex-col overflow-hidden border-r flex-shrink-0
+                                fixed lg:relative z-50 lg:z-auto
+                                ${actualTheme === 'dark'
+                                    ? 'bg-[#111111] border-white/5'
+                                    : 'bg-gray-50 border-gray-200'
+                                }
+                            `}
+                        >
+                            {/* Header — AI icon + "New chat" with underline */}
+                            <div className={`h-14 px-4 flex items-center justify-between border-b flex-shrink-0 ${actualTheme === 'dark' ? 'border-white/5' : 'border-gray-200'
+                                }`}>
+                                <button
+                                    onClick={startNewChat}
+                                    className={`flex items-center gap-2.5 text-[13px] font-medium transition-colors ${actualTheme === 'dark'
+                                        ? 'text-gray-400 hover:text-white'
+                                        : 'text-gray-500 hover:text-gray-900'
+                                        }`}
+                                >
+                                    <Sparkles className="w-4 h-4" />
+                                    <span>New chat</span>
+                                </button>
+                                {/* Close button on mobile */}
+                                <button
+                                    onClick={() => {
+                                        setSidebarOpen(false);
+                                        expandSidebar();
+                                    }}
+                                    className={`lg:hidden p-1.5 rounded-lg transition-colors ${actualTheme === 'dark'
+                                        ? 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                                        : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Conversations List */}
+                            <nav className="flex-1 overflow-y-auto px-2.5 py-2">
+                                {/* Section Label */}
+                                <p className={`px-3 py-1.5 mb-1 text-[11px] font-semibold uppercase tracking-wider ${actualTheme === 'dark' ? 'text-white/30' : 'text-gray-400'
                                     }`}>Recent</p>
-                            </div>
-                            <div className="space-y-0.5">
-                                {mockConversations.map((conv) => (
-                                    <button
-                                        key={conv.id}
-                                        onClick={() => setActiveConversation(conv.id)}
-                                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors group ${activeConversation === conv.id
-                                            ? actualTheme === 'dark' ? 'bg-white/10 text-white' : 'bg-gray-200 text-gray-900'
-                                            : actualTheme === 'dark' ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                                            }`}
-                                    >
-                                        <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-60" />
-                                        <span className="text-sm truncate flex-1">{conv.title}</span>
-                                        <button
-                                            className={`opacity-0 group-hover:opacity-100 p-1 rounded transition-all ${actualTheme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-200'
-                                                }`}
-                                            onClick={(e) => { e.stopPropagation(); }}
-                                        >
-                                            <MoreHorizontal className="w-4 h-4" />
-                                        </button>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
 
-                        {/* Sidebar Footer - User */}
-                        <div className="p-3 border-t border-white/5">
-                            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
-                                    {user?.displayName?.charAt(0) || 'U'}
-                                </div>
-                                <div className="flex-1 text-left">
-                                    <p className="text-sm font-medium text-white truncate">{user?.displayName || 'User'}</p>
-                                    <p className="text-xs text-white/50">Free plan</p>
-                                </div>
-                                <Settings className="w-4 h-4 text-white/40" />
-                            </button>
-                        </div>
-                    </motion.aside>
+                                <ul className="space-y-0.5">
+                                    {mockConversations.map((conv) => {
+                                        const active = activeConversation === conv.id;
+                                        return (
+                                            <li key={conv.id}>
+                                                <button
+                                                    onClick={() => {
+                                                        setActiveConversation(conv.id);
+                                                        // Auto-close on mobile after selecting
+                                                        if (window.innerWidth < 1024) {
+                                                            setSidebarOpen(false);
+                                                            expandSidebar();
+                                                        }
+                                                    }}
+                                                    className={`
+                                                        relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-left
+                                                        transition-all duration-150 ease-out group
+                                                        ${active
+                                                            ? actualTheme === 'dark'
+                                                                ? 'bg-blue-500/10 text-blue-400'
+                                                                : 'bg-blue-50 text-blue-600'
+                                                            : actualTheme === 'dark'
+                                                                ? 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+                                                                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                                                        }
+                                                    `}
+                                                >
+                                                    {/* Active indicator bar */}
+                                                    {active && (
+                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-blue-500 rounded-r-full" />
+                                                    )}
+                                                    <MessageSquare className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={active ? 2 : 1.75} />
+                                                    <span className="truncate flex-1">{conv.title}</span>
+                                                    {/* More button on hover */}
+                                                    <button
+                                                        className={`opacity-0 group-hover:opacity-100 p-1 rounded transition-all flex-shrink-0 ${actualTheme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-200'
+                                                            }`}
+                                                        onClick={(e) => { e.stopPropagation(); }}
+                                                    >
+                                                        <MoreHorizontal className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </nav>
+                        </motion.aside>
+                    </>
                 )}
             </AnimatePresence>
 
             {/* Main Content Area - Split Screen Container */}
             <div className="flex-1 flex overflow-hidden">
                 {/* Chat Panel */}
-                <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isPanelOpen ? 'w-1/2' : 'w-full'
+                <div className={`flex flex-col overflow-hidden transition-all duration-300 w-full ${isPanelOpen ? 'lg:w-1/2' : ''
                     }`}>
-                    {/* Header - Fixed */}
-                    <header className={`flex-shrink-0 h-14 flex items-center px-4 border-b backdrop-blur-sm ${actualTheme === 'dark'
-                        ? 'border-white/5 bg-[#171717]/80'
-                        : 'border-gray-200 bg-white/80'
-                        }`}>
-                        <button
-                            onClick={() => {
-                                const newState = !sidebarOpen;
-                                setSidebarOpen(newState);
-                                if (newState) {
-                                    collapseSidebar(); // Close main sidebar when opening chat sidebar
-                                } else {
-                                    expandSidebar(); // Open main sidebar when closing chat sidebar
-                                }
-                            }}
-                            className={`p-2 -ml-2 mr-2 rounded-lg transition-colors ${actualTheme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-gray-100'
-                                }`}
-                        >
-                            {sidebarOpen
-                                ? <ChevronLeft className={`w-5 h-5 ${actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'}`} />
-                                : <ChevronRight className={`w-5 h-5 ${actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'}`} />}
-                        </button>
+                    {/* Scrollable area with sticky header inside */}
+                    <div className="flex-1 overflow-y-auto pb-36 lg:pb-0">
+                        {/* Header - Sticky at top */}
+                        <header className={`sticky top-0 z-10 h-14 flex items-center px-4 border-b backdrop-blur-xl ${actualTheme === 'dark'
+                            ? 'border-white/5 bg-[#171717]/90'
+                            : 'border-gray-200 bg-white/90'
+                            }`}>
+                            <button
+                                onClick={() => {
+                                    const newState = !sidebarOpen;
+                                    setSidebarOpen(newState);
+                                    if (newState) {
+                                        collapseSidebar(); // Close main sidebar when opening chat sidebar
+                                    } else {
+                                        expandSidebar(); // Open main sidebar when closing chat sidebar
+                                    }
+                                }}
+                                className={`p-2 -ml-2 mr-2 rounded-lg transition-colors ${actualTheme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-gray-100'
+                                    }`}
+                            >
+                                {sidebarOpen
+                                    ? <ChevronLeft className={`w-5 h-5 ${actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'}`} />
+                                    : <ChevronRight className={`w-5 h-5 ${actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'}`} />}
+                            </button>
 
-                        <div className={`flex items-center gap-2 text-sm ${actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
-                            <Sparkles className="w-4 h-4 text-purple-400" />
-                            <span>/</span>
-                            <span className={actualTheme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>
-                                {activeConversation
-                                    ? mockConversations.find(c => c.id === activeConversation)?.title
-                                    : 'New conversation'}
-                            </span>
-                        </div>
-                    </header>
+                            <div className={`flex items-center gap-2 text-sm ${actualTheme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
+                                <Sparkles className="w-4 h-4 text-purple-400" />
+                                <span>/</span>
+                                <span className={actualTheme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>
+                                    {activeConversation
+                                        ? mockConversations.find(c => c.id === activeConversation)?.title
+                                        : 'New conversation'}
+                                </span>
+                            </div>
 
-                    {/* Messages Area - This is the only scrollable part */}
-                    <div className="flex-1 overflow-y-auto">
+                            {/* Close button — mobile only, navigates to dashboard */}
+                            <button
+                                onClick={() => router.push('/dashboard')}
+                                className={`lg:hidden ml-auto p-2 rounded-lg transition-colors ${actualTheme === 'dark'
+                                    ? 'text-white/50 hover:text-white hover:bg-white/10'
+                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </header>
+
+                        {/* Messages content */}
                         <div className="max-w-3xl mx-auto px-4 py-8">
                             {messages.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -571,10 +630,16 @@ Recent Expenses: ${expenses.slice(0, 5).map(e => `${e.description}: ₹${e.amoun
                                                 <button
                                                     key={idx}
                                                     onClick={() => sendMessage(prompt.text)}
-                                                    className="flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all text-left group"
+                                                    className={`flex items-center gap-3 p-4 rounded-xl transition-all text-left group ${actualTheme === 'dark'
+                                                        ? 'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20'
+                                                        : 'bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 shadow-sm'
+                                                        }`}
                                                 >
                                                     <Icon className="w-5 h-5 text-purple-400 flex-shrink-0" />
-                                                    <span className="text-sm text-white/80 group-hover:text-white">{prompt.text}</span>
+                                                    <span className={`text-sm ${actualTheme === 'dark'
+                                                        ? 'text-white/80 group-hover:text-white'
+                                                        : 'text-gray-600 group-hover:text-gray-900'
+                                                        }`}>{prompt.text}</span>
                                                 </button>
                                             );
                                         })}
@@ -689,7 +754,7 @@ Recent Expenses: ${expenses.slice(0, 5).map(e => `${e.description}: ₹${e.amoun
                                                                         {generatingArtifact.name}
                                                                     </p>
                                                                     <p className={`text-xs ${actualTheme === 'dark' ? 'text-white/50' : 'text-gray-500'}`}>
-                                                                        HTML Dashboard
+                                                                        Markdown Report
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -755,13 +820,16 @@ Recent Expenses: ${expenses.slice(0, 5).map(e => `${e.description}: ₹${e.amoun
                     </div>
 
                     {/* Input Area - Floating at bottom */}
-                    <div className="flex-shrink-0 p-4 pt-2">
+                    <div className={`
+                        fixed bottom-0 left-0 right-0 z-[55] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
+                        lg:relative lg:flex-shrink-0 lg:p-4 lg:pt-2 lg:pb-4 lg:z-auto
+                    `}>
                         <div className="max-w-3xl mx-auto">
                             <form onSubmit={handleSubmit} className="relative">
                                 <div
-                                    className={`relative rounded-[28px] transition-all duration-200 ${actualTheme === 'dark'
-                                        ? 'bg-[#404040]'
-                                        : 'bg-white border border-gray-200 shadow-lg'
+                                    className={`relative rounded-2xl lg:rounded-[28px] transition-all duration-200 ${actualTheme === 'dark'
+                                        ? 'bg-white/[0.08] backdrop-blur-xl border border-white/[0.15] shadow-[0_-4px_30px_rgba(0,0,0,0.3)]'
+                                        : 'bg-white/70 backdrop-blur-xl border border-gray-200/60 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]'
                                         } ${isDragging ? actualTheme === 'dark'
                                             ? 'ring-2 ring-purple-500 bg-purple-500/10'
                                             : 'ring-2 ring-purple-500 bg-purple-50'
@@ -1146,13 +1214,50 @@ Recent Expenses: ${expenses.slice(0, 5).map(e => `${e.description}: ₹${e.amoun
                     </div>
                 </div>
 
-                {/* Artifacts Panel - Right Side */}
+                {/* Artifacts Panel - Desktop: Right Side */}
                 {isPanelOpen && (
-                    <div className="w-1/2 border-l border-white/10">
+                    <div className="hidden lg:block w-1/2 border-l border-white/10">
                         <ArtifactsPanel />
                     </div>
                 )}
             </div>
+
+            {/* Artifacts Panel - Mobile: Full-screen bottom sheet */}
+            {isPanelOpen && (
+                <div className="lg:hidden">
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80] animate-fade-in"
+                        onClick={closePanel}
+                    />
+                    {/* Sheet */}
+                    <div className="fixed bottom-0 left-0 right-0 z-[81] animate-slide-up">
+                        <div className={`rounded-t-2xl overflow-hidden flex flex-col h-[92vh] ${actualTheme === 'dark'
+                            ? 'bg-[#0f0f0f]'
+                            : 'bg-white'
+                            }`}>
+                            {/* Drag handle + close */}
+                            <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                                <div className="w-8" />
+                                <div className={`w-10 h-1 rounded-full ${actualTheme === 'dark' ? 'bg-white/20' : 'bg-gray-300'}`} />
+                                <button
+                                    onClick={closePanel}
+                                    className={`p-1.5 rounded-lg transition-colors ${actualTheme === 'dark'
+                                        ? 'text-white/50 hover:text-white hover:bg-white/10'
+                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            {/* Panel content */}
+                            <div className="flex-1 overflow-hidden">
+                                <ArtifactsPanel compact />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
